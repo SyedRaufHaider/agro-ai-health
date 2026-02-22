@@ -1,0 +1,9 @@
+node_modules/
+.env
+*.log
+uploads/
+
+# AI model files (too large for git — use Git LFS or manual deploy)
+*.pt
+*.pth
+ml_models/venv/
