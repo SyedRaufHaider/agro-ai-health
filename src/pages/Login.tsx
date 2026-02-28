@@ -15,9 +15,9 @@ const Login = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Demo credentials for testing without backend
-  const DEMO_EMAIL = "demo@agroai.com";
-  const DEMO_PASSWORD = "demo123";
+  // Testing credentials (works without backend)
+  const DEMO_EMAIL = "testing@agroai.com";
+  const DEMO_PASSWORD = "testing123";
 
   const fillDemo = () => {
     setEmail(DEMO_EMAIL);
@@ -35,7 +35,7 @@ const Login = () => {
         "user",
         JSON.stringify({
           id: "demo-user-001",
-          username: "demo_farmer",
+          username: "testing_user",
           email: DEMO_EMAIL,
           role: "farmer",
           profilePicture: "",
@@ -74,7 +74,7 @@ const Login = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <Navigation />
-      <main className="flex-1 flex items-center justify-center px-4 py-12">
+      <main className="flex-1 flex items-center justify-center px-4 pt-24 pb-12">
         <div className="w-full max-w-md space-y-8">
           <div className="text-center">
             <h1 className="text-3xl font-bold text-foreground">Welcome Back</h1>
@@ -132,7 +132,7 @@ const Login = () => {
               onClick={fillDemo}
               disabled={isLoading}
             >
-              Use Demo Account
+              Use Testing Account
             </Button>
 
             <p className="text-center text-sm text-muted-foreground">
@@ -143,34 +143,6 @@ const Login = () => {
             </p>
           </form>
 
-          {/* Test credentials hint */}
-          <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-2">
-            <p className="text-sm font-semibold text-muted-foreground">
-              🧪 Test Credentials
-            </p>
-            <div className="text-xs text-muted-foreground space-y-1">
-              <p>
-                <span className="font-medium">Demo (no backend):</span>{" "}
-                <code className="bg-muted px-1 rounded">demo@agroai.com</code> /{" "}
-                <code className="bg-muted px-1 rounded">demo123</code>
-              </p>
-              <p>
-                <span className="font-medium">Farmer:</span>{" "}
-                <code className="bg-muted px-1 rounded">farmer@test.com</code> /{" "}
-                <code className="bg-muted px-1 rounded">password123</code>
-              </p>
-              <p>
-                <span className="font-medium">Expert:</span>{" "}
-                <code className="bg-muted px-1 rounded">expert@test.com</code> /{" "}
-                <code className="bg-muted px-1 rounded">password123</code>
-              </p>
-              <p>
-                <span className="font-medium">Admin:</span>{" "}
-                <code className="bg-muted px-1 rounded">admin@test.com</code> /{" "}
-                <code className="bg-muted px-1 rounded">password123</code>
-              </p>
-            </div>
-          </div>
         </div>
       </main>
       <Footer />

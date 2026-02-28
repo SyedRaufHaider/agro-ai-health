@@ -70,8 +70,8 @@ const Profile = () => {
       // Demo mode fallback
       setUser({
         _id: "demo",
-        username: "Demo User",
-        email: "demo@agroai.com",
+        username: "Testing User",
+        email: "testing@agroai.com",
         role: "farmer",
         phone: "",
         profilePicture: "",

@@ -45,12 +45,12 @@ const Signup = () => {
     try {
       const response = await api.register(formData.name, formData.email, formData.password);
       localStorage.setItem('token', response.token);
-      
+
       toast({
         title: "Account created",
         description: "Welcome to Agro AI!",
       });
-      
+
       navigate("/dashboard");
     } catch (error: any) {
       toast({
@@ -73,7 +73,7 @@ const Signup = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <Navigation />
-      <main className="flex-1 flex items-center justify-center px-4 py-12">
+      <main className="flex-1 flex items-center justify-center px-4 pt-24 pb-12">
         <div className="w-full max-w-md space-y-8">
           <div className="text-center">
             <h1 className="text-3xl font-bold text-foreground">Create Account</h1>

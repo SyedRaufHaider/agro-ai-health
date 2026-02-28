@@ -6,16 +6,16 @@ import {
   Leaf,
   Activity,
   Shield,
-  CheckCircle,
-  AlertTriangle,
+  TrendingUp,
   Calendar,
+  MapPin,
+  ArrowRight,
 } from "lucide-react";
 import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -23,9 +23,6 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { api } from "@/lib/api";
-import { CropCalendar } from "@/components/CropCalendar";
-import { FieldHealthMap } from "@/components/FieldHealthMap";
-import { DiseaseTrendList } from "@/components/DiseaseTrendList";
 
 interface ScanRecord {
   _id: string;
@@ -104,6 +101,45 @@ const Dashboard = () => {
       description: "AI accuracy",
       color: "text-blue-500",
       bg: "bg-blue-500/10",
+    },
+  ];
+
+  const modules = [
+    {
+      icon: History,
+      title: "Scan History",
+      description: "View all your plant disease detection scans and results",
+      link: "/scan-history",
+      color: "text-violet-500",
+      bg: "bg-violet-500/10",
+      border: "hover:border-violet-500/30",
+    },
+    {
+      icon: TrendingUp,
+      title: "Disease Trends",
+      description: "Track disease patterns and regional outbreak alerts",
+      link: "/disease-trends",
+      color: "text-rose-500",
+      bg: "bg-rose-500/10",
+      border: "hover:border-rose-500/30",
+    },
+    {
+      icon: Calendar,
+      title: "Crop Calendar",
+      description: "Pakistan crop sowing & harvest schedule with scan activity",
+      link: "/crop-calendar",
+      color: "text-amber-500",
+      bg: "bg-amber-500/10",
+      border: "hover:border-amber-500/30",
+    },
+    {
+      icon: MapPin,
+      title: "Field Health Map",
+      description: "Draw and manage your farm field boundaries on the map",
+      link: "/field-health-map",
+      color: "text-emerald-500",
+      bg: "bg-emerald-500/10",
+      border: "hover:border-emerald-500/30",
     },
   ];
 
@@ -187,108 +223,40 @@ const Dashboard = () => {
           })}
         </div>
 
-        {/* ── Row: Scan History + Disease Trends ──────────────────── */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Recent Scans */}
-          <Card className="lg:col-span-2">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <History className="h-5 w-5" />
-                Scan History
-              </CardTitle>
-              <CardDescription>
-                Your latest plant disease detections
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <div className="space-y-4">
-                  {[1, 2, 3].map((n) => (
-                    <div
-                      key={n}
-                      className="flex items-center gap-4 p-4 rounded-lg border"
-                    >
-                      <Skeleton className="h-16 w-16 rounded-lg" />
-                      <div className="flex-1 space-y-2">
-                        <Skeleton className="h-4 w-40" />
-                        <Skeleton className="h-3 w-24" />
-                      </div>
-                      <Skeleton className="h-6 w-20" />
-                    </div>
-                  ))}
-                </div>
-              ) : scans.length === 0 ? (
-                <div className="text-center py-12">
-                  <Leaf className="h-16 w-16 text-muted-foreground mx-auto mb-4 opacity-50" />
-                  <p className="text-muted-foreground mb-4">No scans yet</p>
-                  <Link to="/scan">
-                    <Button variant="outline">Scan Your First Plant</Button>
-                  </Link>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {scans.slice(0, 6).map((scan) => {
-                    const isHealthy = scan.disease
-                      ?.toLowerCase()
-                      .includes("healthy");
-                    const pct = Math.round((scan.confidence || 0) * 100);
-                    const date = new Date(scan.createdAt).toLocaleDateString(
-                      "en-PK",
-                      { month: "short", day: "numeric", year: "numeric" }
-                    );
-                    return (
-                      <div
-                        key={scan._id}
-                        className="flex items-center gap-4 p-3 rounded-lg border hover:border-primary/30 transition-colors"
-                      >
-                        {scan.imageUrl ? (
-                          <img
-                            src={scan.imageUrl}
-                            alt={scan.disease}
-                            className="h-14 w-14 rounded-lg object-cover flex-shrink-0"
-                          />
-                        ) : (
-                          <div className="h-14 w-14 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
-                            <Leaf className="h-6 w-6 text-muted-foreground" />
-                          </div>
-                        )}
+        {/* ── Module Navigation Cards ──────────────────────────────── */}
+        <div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {modules.map((mod) => {
+              const Icon = mod.icon;
+              return (
+                <Link key={mod.link} to={mod.link}>
+                  <Card
+                    className={`group cursor-pointer transition-all hover:shadow-lg ${mod.border}`}
+                  >
+                    <CardContent className="pt-6">
+                      <div className="flex items-center gap-4">
+                        <div
+                          className={`h-14 w-14 rounded-xl ${mod.bg} flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-110`}
+                        >
+                          <Icon className={`h-7 w-7 ${mod.color}`} />
+                        </div>
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-sm truncate">
-                            {scan.disease}
-                          </h4>
-                          <p className="text-xs text-muted-foreground flex items-center gap-1">
-                            <Calendar className="h-3 w-3" />
-                            {date}
+                          <CardTitle className="text-lg mb-1">
+                            {mod.title}
+                          </CardTitle>
+                          <p className="text-sm text-muted-foreground">
+                            {mod.description}
                           </p>
                         </div>
-                        <Badge
-                          variant={isHealthy ? "default" : "secondary"}
-                          className="flex-shrink-0"
-                        >
-                          {isHealthy ? (
-                            <CheckCircle className="h-3 w-3 mr-1" />
-                          ) : (
-                            <AlertTriangle className="h-3 w-3 mr-1" />
-                          )}
-                          {pct}%
-                        </Badge>
+                        <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0" />
                       </div>
-                    );
-                  })}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Disease Trends */}
-          <DiseaseTrendList scans={scans} />
+                    </CardContent>
+                  </Card>
+                </Link>
+              );
+            })}
+          </div>
         </div>
-
-        {/* ── Crop Calendar ────────────────────────────────────────── */}
-        <CropCalendar scans={scans} />
-
-        {/* ── Field Health Map ─────────────────────────────────────── */}
-        <FieldHealthMap />
       </main>
 
       <Footer />

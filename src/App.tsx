@@ -15,6 +15,10 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Profile from "./pages/Profile";
 import Dashboard from "./pages/Dashboard";
+import ScanHistory from "./pages/ScanHistory";
+import DiseaseTrends from "./pages/DiseaseTrends";
+import CropCalendarPage from "./pages/CropCalendarPage";
+import FieldHealthMapPage from "./pages/FieldHealthMapPage";
 import ForgotPassword from "./pages/ForgotPassword";
 import TermsOfService from "./pages/TermsOfService";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
@@ -43,6 +47,10 @@ const App = () => (
             <Route path="/signup" element={<Signup />} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/scan-history" element={<ProtectedRoute><ScanHistory /></ProtectedRoute>} />
+            <Route path="/disease-trends" element={<ProtectedRoute><DiseaseTrends /></ProtectedRoute>} />
+            <Route path="/crop-calendar" element={<ProtectedRoute><CropCalendarPage /></ProtectedRoute>} />
+            <Route path="/field-health-map" element={<ProtectedRoute><FieldHealthMapPage /></ProtectedRoute>} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/terms-of-service" element={<TermsOfService />} />
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />

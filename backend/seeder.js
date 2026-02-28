@@ -10,28 +10,12 @@ const Disease = require("./models/Disease");
 // ─── Dummy Users ───────────────────────────────────────────────────
 const users = [
     {
-        username: "farmer_ali",
-        email: "farmer@test.com",
-        password: "password123",
+        username: "testing_user",
+        email: "testing@agroai.com",
+        password: "testing123",
         role: "farmer",
         phone: "+92-300-1234567",
         location: { city: "Lahore", country: "Pakistan" },
-    },
-    {
-        username: "expert_sara",
-        email: "expert@test.com",
-        password: "password123",
-        role: "expert",
-        phone: "+92-321-9876543",
-        location: { city: "Islamabad", country: "Pakistan" },
-    },
-    {
-        username: "admin_rauf",
-        email: "admin@test.com",
-        password: "password123",
-        role: "admin",
-        phone: "+92-333-5556667",
-        location: { city: "Karachi", country: "Pakistan" },
     },
 ];
 
