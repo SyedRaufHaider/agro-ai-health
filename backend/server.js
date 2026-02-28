@@ -23,6 +23,7 @@ app.use(
     cors({
         origin: [
             process.env.CLIENT_URL || "http://localhost:5173",
+            "https://agro-ai-health.vercel.app",
             "http://localhost:3000",
             "http://localhost:8080",
             "http://localhost:8081",
