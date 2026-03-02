@@ -62,11 +62,17 @@ export const api = {
     formData.append('image', imageFile);
 
     return apiCall<{
+      success: boolean;
       disease: string;
       confidence: number;
+      status: string;
+      predictions: { label: string; confidence: number }[];
       recommendations: string[];
-      medicines: any[];
-    }>('/scan', {
+      medicines: { name: string; type: string }[];
+      severity?: string;
+      symptoms?: string[];
+      message?: string;
+    }>('/detect', {
       method: 'POST',
       body: formData,
     });
