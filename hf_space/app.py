@@ -39,11 +39,12 @@ MEAN = np.array([0.485, 0.456, 0.406], dtype=np.float32)
 STD  = np.array([0.229, 0.224, 0.225], dtype=np.float32)
 
 def preprocess(image_bytes: bytes) -> np.ndarray:
-    img = Image.open(io.BytesIO(image_bytes)).convert("RGB").resize((224, 224))
+    # Model expects 64x64 input (as seen in the ONNXRuntimeError diff)
+    img = Image.open(io.BytesIO(image_bytes)).convert("RGB").resize((64, 64))
     arr = np.array(img, dtype=np.float32) / 255.0
     arr = (arr - MEAN) / STD
     arr = arr.transpose(2, 0, 1)           # HWC → CHW
-    return np.expand_dims(arr, axis=0)     # → [1, 3, 224, 224]
+    return np.expand_dims(arr, axis=0)     # → [1, 3, 64, 64]
 
 def softmax(x: np.ndarray) -> np.ndarray:
     e = np.exp(x - np.max(x))
