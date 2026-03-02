@@ -52,69 +52,88 @@ const MODEL_FILE_PRIMARY = path.join(ML_DIR, "plant_disease_model.pt");
 const MODEL_FILE_MOBILE = path.join(ML_DIR, "agroai_mobile.pt");
 const MODEL_FILE_ONNX = path.join(ML_DIR, "plant_disease_model.onnx");
 const PYTHON_BIN = process.env.PYTHON_PATH || "python";
+const HF_MODEL_URL = process.env.HF_MODEL_URL; // e.g. https://user-space.hf.space
 
-/** Returns true if at least one model file is present */
+/** Returns true if at least one local model file is present */
 const modelExists = () =>
+    !!HF_MODEL_URL ||                          // HF API counts as "model available"
     fs.existsSync(MODEL_FILE_ONNX) ||
     fs.existsSync(MODEL_FILE_PRIMARY) ||
     fs.existsSync(MODEL_FILE_MOBILE);
 
 /**
- * Auto-select the best predict script:
- *   predict_onnx.py  — when .onnx model exists (Render-safe, lightweight)
- *   predict.py       — fallback for local dev with PyTorch
+ * Run prediction via HF Space API (HTTP) or local Python script.
+ *
+ * Priority:
+ *   1. HF_MODEL_URL set  → HTTP call to HF Space FastAPI
+ *   2. Local .onnx found → spawn predict_onnx.py
+ *   3. Local .pt found   → spawn predict.py (PyTorch)
  */
-const getPredictScript = () =>
-    fs.existsSync(MODEL_FILE_ONNX)
+async function runPrediction(imagePath) {
+    // ── Mode 1: Call Hugging Face Space API ──────────────────────
+    if (HF_MODEL_URL) {
+        const FormData = require("form-data");
+        const fetch = (...args) => import("node-fetch").then(({ default: f }) => f(...args));
+
+        const form = new FormData();
+        form.append("image", fs.createReadStream(imagePath), {
+            filename: "scan.jpg",
+            contentType: "image/jpeg",
+        });
+
+        const res = await (await fetch)(`${HF_MODEL_URL.replace(/\/$/, "")}/predict`, {
+            method: "POST",
+            body: form,
+            headers: form.getHeaders(),
+            timeout: 30000,
+        });
+
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.detail || `HF API error: HTTP ${res.status}`);
+        }
+
+        return res.json();
+    }
+
+    // ── Mode 2: Local Python script (dev only) ───────────────────
+    const script = fs.existsSync(MODEL_FILE_ONNX)
         ? path.join(ML_DIR, "predict_onnx.py")
         : path.join(ML_DIR, "predict.py");
 
-function runPrediction(imagePath) {
     return new Promise((resolve, reject) => {
-        const proc = spawn(PYTHON_BIN, [getPredictScript(), imagePath]);
+        const proc = spawn(PYTHON_BIN, [script, imagePath], {
+            env: { ...process.env, CUDA_VISIBLE_DEVICES: "-1" },
+        });
 
         let stdout = "";
         let stderr = "";
-
-        proc.stdout.on("data", (data) => (stdout += data.toString()));
-        proc.stderr.on("data", (data) => (stderr += data.toString()));
+        proc.stdout.on("data", (d) => (stdout += d.toString()));
+        proc.stderr.on("data", (d) => (stderr += d.toString()));
 
         proc.on("close", (code) => {
-            // Filter out known ORT noise from stderr so the real error is visible
-            const realErrors = stderr
-                .split("\n")
-                .filter((line) => {
-                    const l = line.trim();
-                    return (
-                        l.length > 0 &&
-                        !l.startsWith("[W:") &&     // ORT warnings
-                        !l.startsWith("[I:") &&     // ORT info
-                        !l.includes("GPU device discovery") &&
-                        !l.includes("DiscoverDevices") &&
-                        !l.includes("ReadFileContents")
-                    );
-                })
-                .join("\n")
-                .trim();
-
-            if (code !== 0) {
-                const errMsg = realErrors || stderr.trim() || `predict script exited with code ${code}`;
-                console.error("[AI] predict script error:\n", stderr);
-                return reject(new Error(errMsg));
-            }
-
+            // Try stdout JSON first (Python may print error there even on non-zero exit)
             try {
                 const result = JSON.parse(stdout);
                 if (result.error) return reject(new Error(result.error));
-                resolve(result);
-            } catch (e) {
-                reject(new Error(`Failed to parse prediction output: ${stdout}`));
+                return resolve(result);
+            } catch (_) { }
+
+            if (code !== 0) {
+                const clean = stderr.split("\n")
+                    .filter((l) => l.trim() && !l.startsWith("[W:") && !l.startsWith("[I:"))
+                    .join("\n").trim();
+                console.error("[AI] predict error:\n", stderr);
+                return reject(new Error(clean || `predict script exited with code ${code}`));
             }
+
+            reject(new Error(`Empty output from predict script`));
         });
 
         proc.on("error", (err) => reject(err));
     });
 }
+
 
 // @route   POST /api/v1/detect
 // @desc    Upload image for disease detection
