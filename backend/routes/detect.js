@@ -73,27 +73,37 @@ async function runPrediction(imagePath) {
     // ── Mode 1: Call Hugging Face Space API ──────────────────────
     if (HF_MODEL_URL) {
         const FormData = require("form-data");
-        const fetch = (...args) => import("node-fetch").then(({ default: f }) => f(...args));
-
         const form = new FormData();
         form.append("image", fs.createReadStream(imagePath), {
             filename: "scan.jpg",
             contentType: "image/jpeg",
         });
 
-        const res = await (await fetch)(`${HF_MODEL_URL.replace(/\/$/, "")}/predict`, {
-            method: "POST",
-            body: form,
-            headers: form.getHeaders(),
-            timeout: 30000,
+        // Use built-in https (avoids node-fetch ESM issues in CommonJS)
+        return new Promise((resolve, reject) => {
+            const url = new URL(`${HF_MODEL_URL.replace(/\/$/, "")}/predict`);
+            const lib = url.protocol === "https:" ? require("https") : require("http");
+
+            const req = lib.request(
+                { hostname: url.hostname, path: url.pathname, method: "POST", headers: form.getHeaders() },
+                (res) => {
+                    let data = "";
+                    res.on("data", (chunk) => (data += chunk));
+                    res.on("end", () => {
+                        try {
+                            const json = JSON.parse(data);
+                            if (res.statusCode !== 200)
+                                return reject(new Error(json.detail || `HF API error: HTTP ${res.statusCode}`));
+                            resolve(json);
+                        } catch (e) {
+                            reject(new Error(`Invalid JSON from HF API: ${data}`));
+                        }
+                    });
+                }
+            );
+            req.on("error", reject);
+            form.pipe(req);
         });
-
-        if (!res.ok) {
-            const err = await res.json().catch(() => ({}));
-            throw new Error(err.detail || `HF API error: HTTP ${res.status}`);
-        }
-
-        return res.json();
     }
 
     // ── Mode 2: Local Python script (dev only) ───────────────────
