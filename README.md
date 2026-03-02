@@ -1,34 +1,65 @@
-# 🌿 Agro AI Health — Plant Disease Detection
 
-An AI-powered web application that helps farmers and agriculturists detect plant diseases by analyzing leaf images using deep learning. Upload a photo, get an instant diagnosis with confidence scores, treatment recommendations, and medicine suggestions.
+# 🌿 Agro AI Health
+
+**AI-Powered Plant Disease Detection for Modern Agriculture**
+
+An intelligent web platform that helps farmers and agronomists detect crop diseases instantly by analyzing leaf images using deep learning — delivering diagnoses, confidence scores, treatment recommendations, and full scan history in one place.
+
+[![React](https://img.shields.io/badge/React-18-61DAFB?style=flat-square&logo=react&logoColor=white)](https://react.dev)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
+[![Node.js](https://img.shields.io/badge/Node.js-18+-339933?style=flat-square&logo=node.js&logoColor=white)](https://nodejs.org)
+[![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-47A248?style=flat-square&logo=mongodb&logoColor=white)](https://www.mongodb.com/atlas)
+[![PyTorch](https://img.shields.io/badge/PyTorch-ResNet--50-EE4C2C?style=flat-square&logo=pytorch&logoColor=white)](https://pytorch.org)
+[![License](https://img.shields.io/badge/License-Educational-green?style=flat-square)](#license)
+
+[🚀 Live Demo](#) · [📖 Documentation](#-documentation) · [🐛 Report a Bug](https://github.com/your-username/agro-ai-health/issues) · [✨ Request Feature](https://github.com/your-username/agro-ai-health/issues)
+
+</div>
 
 ---
 
-## 🎯 Features
+## 📸 Preview
 
-- **AI-Powered Diagnosis** — PyTorch model analyzes plant images and identifies 30+ diseases
-- **Instant Results** — Confidence scores, top-k predictions, and severity levels
-- **Treatment Recommendations** — Chemical and organic treatment options backed by agricultural research
-- **Scan History** — Full dashboard with past scans, stats, and trend tracking
-- **Community Feed** — Share findings, ask questions, and help fellow farmers
-- **User Profiles** — Profile management with picture upload
-- **Multi-Platform Ready** — Backend designed for both web and future Flutter mobile app
-- **Dual Storage** — Toggle between AWS S3 and Cloudinary for image storage
-- **Responsive UI** — Glassmorphism navigation, mobile hamburger menu, dark/light themes
+> Upload a leaf image → Get instant AI diagnosis → View treatment plan
+
+---
+
+## ✨ Features
+
+| Feature | Description |
+|---|---|
+| 🧠 **AI Diagnosis** | PyTorch ResNet-50 model identifies 30+ plant diseases with confidence scores |
+| 📊 **Scan History** | Full dashboard with past scans, statistics, and disease trend tracking |
+| 💊 **Treatments** | Chemical and organic treatment options backed by agricultural research |
+| 🌐 **Community Feed** | Share findings, post questions, and connect with fellow farmers |
+| 👤 **User Profiles** | Profile management with picture upload |
+| ☁️ **Dual Storage** | Seamlessly toggle between AWS S3 and Cloudinary for image storage |
+| 🔒 **Secure Auth** | JWT-based authentication with bcrypt password hashing |
+| 📱 **Responsive UI** | Glassmorphism design, mobile hamburger menu, dark/light themes |
+| 🚀 **Flutter Ready** | Backend API designed for both web and Flutter mobile app |
 
 ---
 
 ## 🛠️ Tech Stack
 
-| Layer | Technology |
+### Frontend
+| Technology | Purpose |
 |---|---|
-| **Frontend** | React 18 · TypeScript · Tailwind CSS · shadcn/ui · React Router |
-| **Backend** | Node.js · Express.js · Mongoose ODM |
-| **Database** | MongoDB Atlas |
-| **Image Storage** | AWS S3 / Cloudinary (configurable) |
-| **AI Model** | PyTorch (.pt / .pth) via Python child process |
-| **Auth** | JWT (Bearer tokens) · bcrypt password hashing |
-| **Build Tool** | Vite 5 |
+| React 18 + TypeScript | UI framework |
+| Tailwind CSS + shadcn/ui | Styling & component library |
+| React Router v6 | Client-side routing |
+| Vite 5 | Build tool & dev server |
+| Axios | HTTP client with JWT interceptor |
+
+### Backend
+| Technology | Purpose |
+|---|---|
+| Node.js + Express.js | REST API server |
+| MongoDB Atlas + Mongoose | Database & ODM |
+| JWT + bcrypt | Authentication & password security |
+| Multer | File upload middleware |
+| AWS S3 / Cloudinary | Image storage (configurable) |
+| Python (PyTorch) | AI model inference via child process |
 
 ---
 
@@ -36,63 +67,70 @@ An AI-powered web application that helps farmers and agriculturists detect plant
 
 ```
 agro-ai-health-main/
-├── src/                        # React frontend
-│   ├── components/             # Reusable UI components
-│   │   ├── ui/                 # shadcn/ui primitives
-│   │   ├── Navigation.tsx      # Smart navbar (logged-in/guest views)
-│   │   ├── Hero.tsx            # Landing page hero section
-│   │   ├── Footer.tsx          # Site footer
-│   │   └── ProtectedRoute.tsx  # Route guard (redirects to /login)
-│   ├── pages/                  # Route pages
-│   │   ├── Index.tsx           # Landing page
-│   │   ├── Dashboard.tsx       # Stats + scan history
-│   │   ├── Scan.tsx            # Image upload + AI diagnosis
-│   │   ├── Login.tsx           # Authentication
-│   │   ├── Signup.tsx          # Registration
-│   │   ├── Profile.tsx         # User profile management
-│   │   ├── About.tsx           # About page (login-aware CTAs)
-│   │   ├── FAQs.tsx            # Help & support
-│   │   └── ...                 # Features, Demo, Privacy, Terms
+├── src/                            # React frontend (TypeScript)
+│   ├── components/
+│   │   ├── ui/                     # shadcn/ui primitives
+│   │   ├── Navigation.tsx          # Smart navbar (logged-in/guest views)
+│   │   ├── Hero.tsx                # Landing page hero section
+│   │   ├── Footer.tsx              # Site footer
+│   │   └── ProtectedRoute.tsx      # Route guard → redirects to /login
+│   ├── pages/
+│   │   ├── Index.tsx               # Landing page
+│   │   ├── Dashboard.tsx           # Stats + scan history
+│   │   ├── Scan.tsx                # Image upload + AI diagnosis
+│   │   ├── Login.tsx               # Authentication
+│   │   ├── Signup.tsx              # Registration
+│   │   ├── Profile.tsx             # User profile management
+│   │   ├── About.tsx               # About page
+│   │   ├── FAQs.tsx                # Help & support
+│   │   └── ...                     # Features, Demo, Privacy, Terms
 │   ├── lib/
-│   │   └── api.ts              # API service with JWT interceptor
-│   ├── hooks/                  # Custom React hooks
-│   ├── assets/                 # Images, logos
-│   └── index.css               # Design system (HSL tokens)
+│   │   └── api.ts                  # Axios instance + JWT interceptor
+│   ├── hooks/                      # Custom React hooks
+│   ├── assets/                     # Images, logos
+│   └── index.css                   # Design system (HSL CSS tokens)
 │
-├── backend/                    # Express API server
+├── backend/                        # Express API server
 │   ├── config/
-│   │   ├── db.js               # MongoDB connection
-│   │   ├── cloudinary.js       # Cloudinary upload config
-│   │   └── s3.js               # AWS S3 upload config
+│   │   ├── db.js                   # MongoDB connection
+│   │   ├── cloudinary.js           # Cloudinary upload config
+│   │   └── s3.js                   # AWS S3 upload config
 │   ├── models/
-│   │   ├── User.js             # User schema (auth, profile, FCM)
-│   │   ├── Detection.js        # Scan results (AI predictions)
-│   │   ├── Crop.js             # Crop catalog
-│   │   ├── Disease.js          # Disease data + treatments
-│   │   └── Post.js             # Community posts + comments
+│   │   ├── User.js                 # User schema (auth, profile, FCM)
+│   │   ├── Detection.js            # Scan results (AI predictions)
+│   │   ├── Crop.js                 # Crop catalog
+│   │   ├── Disease.js              # Disease data + treatments
+│   │   └── Post.js                 # Community posts + comments
 │   ├── routes/
-│   │   ├── auth.js             # Register, login, profile, profile picture
-│   │   ├── detect.js           # Image upload + AI prediction
-│   │   ├── crops.js            # CRUD for crops
-│   │   ├── diseases.js         # CRUD for diseases
-│   │   └── posts.js            # Community feed
+│   │   ├── auth.js                 # Register, login, profile, profile picture
+│   │   ├── detect.js               # Image upload + AI prediction
+│   │   ├── crops.js                # CRUD for crops
+│   │   ├── diseases.js             # CRUD for diseases
+│   │   └── posts.js                # Community feed
 │   ├── middleware/
-│   │   ├── auth.js             # JWT verification
-│   │   └── errorHandler.js     # Global error handler
+│   │   ├── auth.js                 # JWT verification middleware
+│   │   └── errorHandler.js         # Global error handler
 │   ├── ml_models/
-│   │   ├── predict.py          # Python inference script
-│   │   ├── class_names.json    # Model class → label mapping
-│   │   └── README.md           # Model setup instructions
-│   ├── seeder.js               # Database seed script
-│   ├── server.js               # Express entry point
-│   └── .env.example            # Environment variable template
+│   │   ├── predict.py              # Python inference script
+│   │   ├── class_names.json        # Model class → disease label mapping
+│   │   └── README.md               # Model setup instructions
+│   ├── seeder.js                   # Database seed script
+│   ├── server.js                   # Express entry point
+│   └── .env.example                # Environment variable template
 │
-└── docs/                       # Project documentation
+├── db_docs/                        # Database documentation & scripts
+│   ├── mongodb_schemas.md
+│   ├── supabase_create_tables.sql
+│   └── ...
+│
+└── docs/                           # Project documentation
     ├── development_plan.md
     ├── implementation_plan.md
     ├── mongodb_schema.md
     ├── aws_s3_config.md
-    └── AI_Implementation_Plan.md
+    ├── AI_Implementation_Plan.md
+    ├── flutter_mobile_app.md
+    └── mobile_implementation_plan.md
 ```
 
 ---
@@ -101,10 +139,15 @@ agro-ai-health-main/
 
 ### Prerequisites
 
+Before you begin, make sure you have the following installed:
+
 - **Node.js** v18+ and npm
-- **MongoDB** (Atlas cluster or local)
-- **Python** 3.8+ with pip (for AI model)
+- **Python** 3.8+ with pip
 - **Git**
+- A **MongoDB Atlas** account (free tier works)
+- A **Cloudinary** or **AWS S3** account for image storage
+
+---
 
 ### 1. Clone the Repository
 
@@ -113,16 +156,20 @@ git clone https://github.com/your-username/agro-ai-health.git
 cd agro-ai-health-main
 ```
 
+---
+
 ### 2. Frontend Setup
 
 ```bash
 # Install dependencies
 npm install
 
-# Start development server
+# Start Vite development server
 npm run dev
-# → opens at http://localhost:5173
+# → Runs at http://localhost:5173
 ```
+
+---
 
 ### 3. Backend Setup
 
@@ -132,62 +179,71 @@ cd backend
 # Install dependencies
 npm install
 
-# Copy environment template and fill in your values
+# Copy the environment template
 cp .env.example .env
+# Then open .env and fill in your credentials (see below)
 
-# Start the server
+# Start the API server with hot-reload
 npm run dev
 # → API running at http://localhost:5000
 ```
 
+---
+
 ### 4. Environment Variables
 
-Edit `backend/.env` with your credentials:
+Open `backend/.env` and configure the following:
 
 ```env
-# MongoDB
+# ── MongoDB ─────────────────────────────────────────────────────────────────
 MONGO_URI=mongodb+srv://<username>:<password>@cluster0.xxxxx.mongodb.net/agro-ai-health
 
-# JWT
-JWT_SECRET=your_secret_key_here
+# ── JWT ─────────────────────────────────────────────────────────────────────
+JWT_SECRET=your_super_secret_key_here
 JWT_EXPIRE=30d
 
-# Image Storage (choose one)
-IMAGE_STORAGE=cloudinary   # or "s3"
+# ── Image Storage (choose one: "cloudinary" or "s3") ────────────────────────
+IMAGE_STORAGE=cloudinary
 
-# Cloudinary
+# ── Cloudinary (if IMAGE_STORAGE=cloudinary) ────────────────────────────────
 CLOUDINARY_CLOUD_NAME=your_cloud_name
 CLOUDINARY_API_KEY=your_api_key
 CLOUDINARY_API_SECRET=your_api_secret
 
-# AWS S3 (if IMAGE_STORAGE=s3)
-AWS_ACCESS_KEY_ID=your_key
-AWS_SECRET_ACCESS_KEY=your_secret
+# ── AWS S3 (if IMAGE_STORAGE=s3) ────────────────────────────────────────────
+AWS_ACCESS_KEY_ID=your_access_key
+AWS_SECRET_ACCESS_KEY=your_secret_key
 AWS_REGION=ap-south-1
 AWS_S3_BUCKET=agro-ai-health-images
 
-# Python (for AI)
+# ── Python / AI ─────────────────────────────────────────────────────────────
 PYTHON_PATH=python
 
-# CORS
+# ── CORS ─────────────────────────────────────────────────────────────────────
 CLIENT_URL=http://localhost:5173
 ```
 
-### 5. AI Model Setup (Optional)
+---
+
+### 5. AI Model Setup
 
 ```bash
 # Install Python dependencies
 pip install torch torchvision pillow
 
-# Place your trained model
-# → backend/ml_models/plant_disease_model.pt
+# Place your trained model file at:
+# backend/ml_models/plant_disease_model.pt
 
-# Update class mapping if needed
-# → backend/ml_models/class_names.json
+# Update class label mapping if needed:
+# backend/ml_models/class_names.json
 
-# Test standalone
-python backend/ml_models/predict.py path/to/test_image.jpg
+# Test inference standalone:
+python backend/ml_models/predict.py path/to/test_leaf_image.jpg
 ```
+
+> 📌 The model is not included in this repository due to file size. See [AI Implementation Plan](docs/AI_Implementation_Plan.md) for training and export instructions.
+
+---
 
 ### 6. Seed the Database
 
@@ -196,71 +252,87 @@ cd backend
 npm run seed
 ```
 
----
-
-## 📡 API Endpoints
-
-### Authentication
-
-| Method | Endpoint | Description | Auth |
-|---|---|---|---|
-| `POST` | `/api/v1/auth/register` | Register a new user | Public |
-| `POST` | `/api/v1/auth/login` | Login & get JWT token | Public |
-| `GET` | `/api/v1/auth/me` | Get current user profile | 🔒 |
-| `PUT` | `/api/v1/auth/profile` | Update profile fields | 🔒 |
-| `PUT` | `/api/v1/auth/profile-picture` | Upload profile picture | 🔒 |
-
-### Plant Disease Detection
-
-| Method | Endpoint | Description | Auth |
-|---|---|---|---|
-| `POST` | `/api/v1/detect` | Upload image for diagnosis | 🔒 |
-| `GET` | `/api/v1/detect/history` | Get user's scan history | 🔒 |
-| `GET` | `/api/v1/detect/:id` | Get specific scan result | 🔒 |
-
-### Crops & Diseases
-
-| Method | Endpoint | Description | Auth |
-|---|---|---|---|
-| `GET` | `/api/v1/crops` | List all crops | Public |
-| `GET` | `/api/v1/diseases` | List all diseases | Public |
-
-### Community
-
-| Method | Endpoint | Description | Auth |
-|---|---|---|---|
-| `GET` | `/api/v1/posts` | List community posts | Public |
-| `POST` | `/api/v1/posts` | Create a new post | 🔒 |
+This populates MongoDB with sample crops, diseases, and treatment data.
 
 ---
 
 ## 🧠 AI Model Pipeline
 
 ```
-User uploads image
-       │
-       ▼
-Node.js receives file via multer
-       │
-       ├──► Upload to S3/Cloudinary → permanent URL
-       │
-       ├──► Write to temp file
-       │
-       ▼
-spawn("python", ["predict.py", tempPath])
-       │
-       ▼
-PyTorch model inference (ResNet-50)
-       │
-       ▼
-JSON output: { disease, confidence, status, predictions[] }
-       │
-       ▼
-Match disease label → Disease collection → treatments
-       │
-       ▼
-Save Detection record → return full result to client
+User uploads leaf image
+        │
+        ▼
+Node.js receives file (Multer middleware)
+        │
+        ├──► Upload to S3 / Cloudinary  →  Permanent URL saved
+        │
+        ├──► Write image to temp file
+        │
+        ▼
+spawn("python", ["predict.py", tempFilePath])
+        │
+        ▼
+PyTorch ResNet-50 inference
+        │
+        ▼
+JSON output: { disease, confidence, status, top_predictions[] }
+        │
+        ▼
+Match disease label → Disease collection → fetch treatments
+        │
+        ▼
+Save Detection record to MongoDB
+        │
+        ▼
+Return full result to React frontend
 ```
+
+---
+
+## 📡 API Reference
+
+### 🔐 Authentication
+
+| Method | Endpoint | Description | Auth |
+|---|---|---|---|
+| `POST` | `/api/v1/auth/register` | Register a new user | Public |
+| `POST` | `/api/v1/auth/login` | Login and receive JWT token | Public |
+| `GET` | `/api/v1/auth/me` | Get current user profile | 🔒 JWT |
+| `PUT` | `/api/v1/auth/profile` | Update profile fields | 🔒 JWT |
+| `PUT` | `/api/v1/auth/profile-picture` | Upload profile picture | 🔒 JWT |
+
+### 🔬 Plant Disease Detection
+
+| Method | Endpoint | Description | Auth |
+|---|---|---|---|
+| `POST` | `/api/v1/detect` | Upload leaf image for AI diagnosis | 🔒 JWT |
+| `GET` | `/api/v1/detect/history` | Get user's full scan history | 🔒 JWT |
+| `GET` | `/api/v1/detect/:id` | Get a specific scan result by ID | 🔒 JWT |
+
+### 🌾 Crops & Diseases
+
+| Method | Endpoint | Description | Auth |
+|---|---|---|---|
+| `GET` | `/api/v1/crops` | List all crops in the catalog | Public |
+| `GET` | `/api/v1/diseases` | List all diseases with treatments | Public |
+
+### 🗣️ Community
+
+| Method | Endpoint | Description | Auth |
+|---|---|---|---|
+| `GET` | `/api/v1/posts` | List all community posts | Public |
+| `POST` | `/api/v1/posts` | Create a new post | 🔒 JWT |
+
+---
+
+## 🔒 Security
+
+- **Passwords** — Hashed with bcrypt (12 salt rounds), never stored in plain text
+- **Authentication** — Stateless JWT Bearer tokens with configurable expiry
+- **Route Protection** — Auth middleware on all private endpoints
+- **File Validation** — Multer MIME-type filter + 10 MB size limit
+- **CORS** — Configurable allowed origins via `CLIENT_URL` env variable
+- **Input Validation** — `express-validator` on all auth routes
 
 ---
 
@@ -268,80 +340,86 @@ Save Detection record → return full result to client
 
 | Document | Description |
 |---|---|
-| [Development Plan](docs/development_plan.md) | Architecture, tech stack, and design decisions |
+| [Development Plan](docs/development_plan.md) | Architecture, tech stack decisions, and design rationale |
 | [Implementation Plan](docs/implementation_plan.md) | Phase-by-phase development roadmap |
 | [MongoDB Schema](docs/mongodb_schema.md) | All collections with field types, indexes, and ER diagram |
 | [AWS S3 Config](docs/aws_s3_config.md) | Bucket setup, IAM policy, CORS, and migration guide |
-| [AI Implementation](docs/AI_Implementation_Plan.md) | Model integration, predict.py, and testing checklist |
-| [Flutter Mobile Plan](docs/flutter_mobile_app.md) | Future mobile app architecture |
-| [Mobile Implementation](docs/mobile_implementation_plan.md) | Flutter development phases |
+| [AI Implementation](docs/AI_Implementation_Plan.md) | Model integration, predict.py walkthrough, testing checklist |
+| [Flutter Mobile Plan](docs/flutter_mobile_app.md) | Mobile app architecture and offline-first design |
+| [Mobile Implementation](docs/mobile_implementation_plan.md) | Flutter development phases and API integration guide |
+| [Database Docs](db_docs/README.md) | MongoDB & Supabase schemas, runnable scripts, and storage toggles |
 
 ---
 
-## 🧪 Scripts
+## 🧪 Available Scripts
 
 ```bash
-# Frontend
-npm run dev          # Start Vite dev server
-npm run build        # Production build
-npm run preview      # Preview production build
+# ── Frontend (run from project root) ────────────────────────────────────────
+npm run dev          # Start Vite dev server  →  http://localhost:5173
+npm run build        # Build optimized production bundle
+npm run preview      # Preview production build locally
 
-# Backend
-cd backend
-npm run dev          # Start with nodemon (hot-reload)
+# ── Backend (run from /backend) ──────────────────────────────────────────────
+npm run dev          # Start server with nodemon (auto-reload on changes)
 npm start            # Start production server
-npm run seed         # Seed database with sample data
+npm run seed         # Seed MongoDB with sample crops, diseases, and users
 ```
-
----
-
-## 🔒 Security
-
-- **Passwords** — Hashed with bcrypt (salt rounds: 12)
-- **Authentication** — JWT Bearer tokens with configurable expiry
-- **Route Protection** — Middleware on all private endpoints
-- **File Validation** — Multer filters for image types + size limits (10 MB)
-- **CORS** — Configurable allowed origins
-- **Input Validation** — express-validator on auth routes
 
 ---
 
 ## 🗺️ Roadmap
 
-- [x] Frontend — React + TypeScript + Tailwind + shadcn/ui
-- [x] Backend — Express + MongoDB + JWT auth
-- [x] Image Storage — Cloudinary + AWS S3 (dual support)
-- [x] AI Pipeline — Python predict.py + Node.js spawn bridge
-- [x] Dashboard — Stats, scan history, skeleton loading
-- [x] Scan Page — Drag-and-drop upload, result card, confidence bar
-- [x] Route Guards — Protected routes with login redirect
-- [x] Mobile Navigation — Hamburger menu for small screens
-- [ ] Deploy AI model (.pt file)
-- [ ] Seed disease database with treatments
-- [ ] End-to-end testing
-- [ ] Production deployment (Vercel + Railway/Render)
-- [ ] Flutter mobile app
+- [x] Frontend — React 18 + TypeScript + Tailwind CSS + shadcn/ui
+- [x] Backend — Node.js + Express + MongoDB + JWT authentication
+- [x] Image Storage — Cloudinary + AWS S3 dual support
+- [x] AI Pipeline — Python predict.py + Node.js child process bridge
+- [x] Dashboard — Scan history, statistics, skeleton loading states
+- [x] Scan Page — Drag-and-drop upload, result card, confidence progress bar
+- [x] Route Guards — Protected routes with automatic login redirect
+- [x] Mobile Navigation — Hamburger menu with responsive layout
+- [x] Profile Picture Upload — Avatar upload with cloud storage
+- [x] Deployment — Backend on Render, Frontend on Vercel
+- [ ] AI model .pt file deployment to production server
+- [ ] Push notifications (FCM integration)
+- [ ] End-to-end testing suite
+- [ ] Flutter mobile app (Android + iOS)
 
 ---
 
-## 👥 Contributing
+## 🤝 Contributing
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/my-feature`)
-3. Commit your changes (`git commit -m 'Add my feature'`)
-4. Push to the branch (`git push origin feature/my-feature`)
-5. Open a Pull Request
+Contributions are welcome! Here's how to get started:
+
+1. **Fork** the repository
+2. **Create** a feature branch
+   ```bash
+   git checkout -b feature/your-feature-name
+   ```
+3. **Commit** your changes with a descriptive message
+   ```bash
+   git commit -m "feat: add your feature description"
+   ```
+4. **Push** to your branch
+   ```bash
+   git push origin feature/your-feature-name
+   ```
+5. **Open a Pull Request** and describe your changes
+
+Please follow [Conventional Commits](https://www.conventionalcommits.org/) for commit messages.
 
 ---
 
 ## 📄 License
 
-This project is for educational and research purposes.
+This project is developed for **educational and research purposes**.  
+All rights reserved © 2026 Agro AI Team.
 
 ---
 
-<p align="center">
-  Built with 💚 by the Agro AI Team
-</p>
-#   a g r o - a i - h e a l t h  
- 
+<div align="center">
+
+Built with 💚 by the **Agro AI Team**
+
+*Empowering farmers with the power of AI*
+
+</div>
