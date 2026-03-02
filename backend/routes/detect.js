@@ -80,9 +80,29 @@ function runPrediction(imagePath) {
         proc.stderr.on("data", (data) => (stderr += data.toString()));
 
         proc.on("close", (code) => {
+            // Filter out known ORT noise from stderr so the real error is visible
+            const realErrors = stderr
+                .split("\n")
+                .filter((line) => {
+                    const l = line.trim();
+                    return (
+                        l.length > 0 &&
+                        !l.startsWith("[W:") &&     // ORT warnings
+                        !l.startsWith("[I:") &&     // ORT info
+                        !l.includes("GPU device discovery") &&
+                        !l.includes("DiscoverDevices") &&
+                        !l.includes("ReadFileContents")
+                    );
+                })
+                .join("\n")
+                .trim();
+
             if (code !== 0) {
-                return reject(new Error(stderr || `predict.py exited with code ${code}`));
+                const errMsg = realErrors || stderr.trim() || `predict script exited with code ${code}`;
+                console.error("[AI] predict script error:\n", stderr);
+                return reject(new Error(errMsg));
             }
+
             try {
                 const result = JSON.parse(stdout);
                 if (result.error) return reject(new Error(result.error));

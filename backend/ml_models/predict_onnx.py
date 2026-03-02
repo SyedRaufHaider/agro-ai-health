@@ -7,25 +7,19 @@ Uses onnxruntime-cpu (~20 MB) instead of PyTorch (~700 MB).
 Usage:
     python predict_onnx.py <image_path>
 
-Output (stdout):
-    {
-        "disease": "Tomato___Late_blight",
-        "confidence": 0.9432,
-        "status": "infected",
-        "predictions": [
-            {"label": "Tomato___Late_blight", "confidence": 0.9432},
-            {"label": "Tomato___Early_blight", "confidence": 0.0321},
-            {"label": "Tomato___Leaf_Mold",    "confidence": 0.0112}
-        ]
-    }
-
-Requirements (Render-safe, small footprint):
+Requirements (Render-safe):
     pip install onnxruntime pillow numpy
 """
 
 import sys
 import json
 import os
+
+# ─── Suppress ORT GPU discovery warnings BEFORE importing onnxruntime ───────
+# On CPU-only servers (Render free/starter), ORT prints a noisy warning to
+# stderr about missing GPU. This silences it so stderr only contains real errors.
+os.environ.setdefault("ORT_LOGGING_LEVEL_WARNING", "3")  # 3 = ERROR only
+os.environ.setdefault("ONNXRUNTIME_DISABLE_GPU_FALLBACK", "1")
 
 import numpy as np
 import onnxruntime as ort
