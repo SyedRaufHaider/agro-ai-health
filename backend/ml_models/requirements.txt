@@ -1,0 +1,17 @@
+# Agro AI — Python dependencies for AI inference
+
+# ─── Render / Production (ONNX — lightweight, recommended) ────────────────
+# Only ~20 MB install. Works on Render free tier.
+onnxruntime>=1.17.0
+Pillow>=9.0.0
+numpy>=1.24.0
+
+# ─── Local Development (PyTorch — needed to run predict.py) ───────────────
+# Uncomment below to install PyTorch locally (NOT recommended for Render).
+# Requires Python 3.8–3.12 (PyTorch does NOT support Python 3.14 yet).
+#
+# CPU only (smaller):
+#   pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+#
+# GPU (CUDA 12.1):
+#   pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121

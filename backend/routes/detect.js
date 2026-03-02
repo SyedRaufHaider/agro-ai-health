@@ -25,13 +25,31 @@ if (useS3) {
 }
 
 // ─── Helper: run Python prediction script ─────────────────────
-const PREDICT_SCRIPT = path.join(__dirname, "..", "ml_models", "predict.py");
-const MODEL_FILE = path.join(__dirname, "..", "ml_models", "plant_disease_model.pt");
+const ML_DIR = path.join(__dirname, "..", "ml_models");
+const MODEL_FILE_PRIMARY = path.join(ML_DIR, "plant_disease_model.pt");
+const MODEL_FILE_MOBILE = path.join(ML_DIR, "agroai_mobile.pt");
+const MODEL_FILE_ONNX = path.join(ML_DIR, "plant_disease_model.onnx");
 const PYTHON_BIN = process.env.PYTHON_PATH || "python";
+
+/** Returns true if at least one model file is present */
+const modelExists = () =>
+    fs.existsSync(MODEL_FILE_ONNX) ||
+    fs.existsSync(MODEL_FILE_PRIMARY) ||
+    fs.existsSync(MODEL_FILE_MOBILE);
+
+/**
+ * Auto-select the best predict script:
+ *   predict_onnx.py  — when .onnx model exists (Render-safe, lightweight)
+ *   predict.py       — fallback for local dev with PyTorch
+ */
+const getPredictScript = () =>
+    fs.existsSync(MODEL_FILE_ONNX)
+        ? path.join(ML_DIR, "predict_onnx.py")
+        : path.join(ML_DIR, "predict.py");
 
 function runPrediction(imagePath) {
     return new Promise((resolve, reject) => {
-        const proc = spawn(PYTHON_BIN, [PREDICT_SCRIPT, imagePath]);
+        const proc = spawn(PYTHON_BIN, [getPredictScript(), imagePath]);
 
         let stdout = "";
         let stderr = "";
@@ -83,7 +101,7 @@ router.post("/", protect, uploadMiddleware, async (req, res, next) => {
         let aiResult = null;
         let diseaseInfo = null;
 
-        if (fs.existsSync(MODEL_FILE)) {
+        if (modelExists()) {
             aiResult = await runPrediction(tempPath);
 
             // 5. Match to Disease collection for treatments
@@ -129,8 +147,8 @@ router.post("/", protect, uploadMiddleware, async (req, res, next) => {
             response.symptoms = diseaseInfo.symptoms;
         }
 
-        if (!fs.existsSync(MODEL_FILE)) {
-            response.message = "AI model not loaded. Place your .pt file in backend/ml_models/ to enable predictions.";
+        if (!modelExists()) {
+            response.message = "AI model not loaded. Place plant_disease_model.onnx (recommended) or plant_disease_model.pt / agroai_mobile.pt in backend/ml_models/ to enable predictions.";
         }
 
         res.status(201).json(response);

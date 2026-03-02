@@ -15,7 +15,7 @@ Output (stdout):
         "predictions": [
             {"label": "Tomato___Late_blight", "confidence": 0.9432},
             {"label": "Tomato___Early_blight", "confidence": 0.0321},
-            {"label": "Tomato___Leaf_Mold", "confidence": 0.0112}
+            {"label": "Tomato___Leaf_Mold",    "confidence": 0.0112}
         ]
     }
 
@@ -34,46 +34,60 @@ from PIL import Image
 
 
 # ─── Configuration ──────────────────────────────────────────
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-MODEL_PATH = os.path.join(SCRIPT_DIR, "plant_disease_model.pt")
-CLASS_NAMES_PATH = os.path.join(SCRIPT_DIR, "class_names.json")
-IMAGE_SIZE = 224
-TOP_K = 3  # Number of top predictions to return
+SCRIPT_DIR        = os.path.dirname(os.path.abspath(__file__))
+MODEL_PATH        = os.path.join(SCRIPT_DIR, "plant_disease_model.pt")
+MOBILE_MODEL_PATH = os.path.join(SCRIPT_DIR, "agroai_mobile.pt")
+CLASS_NAMES_PATH  = os.path.join(SCRIPT_DIR, "class_names.json")
+IMAGE_SIZE        = 224
+TOP_K             = 3   # Number of top predictions to return
 
 
 # ─── Load class names ──────────────────────────────────────
 def load_class_names():
     with open(CLASS_NAMES_PATH, "r") as f:
         mapping = json.load(f)
-    # Convert string keys to int and sort
     return {int(k): v for k, v in mapping.items()}
 
 
 # ─── Load model ─────────────────────────────────────────────
 def load_model(num_classes):
     """
-    Load the pre-trained PyTorch model.
-    Adjust this function to match your model architecture.
-
-    Common architectures:
-    - models.resnet50(pretrained=False)
-    - models.efficientnet_b0(pretrained=False)
-    - models.mobilenet_v2(pretrained=False)
+    Smart loader — tries in this order:
+      1. TorchScript  (agroai_mobile.pt  — self-contained, fastest)
+      2. ResNet-50 state_dict  (plant_disease_model.pt — trained weights)
     """
-    model = models.resnet50(pretrained=False)
-    # Replace final FC layer to match number of disease classes
-    model.fc = torch.nn.Linear(model.fc.in_features, num_classes)
 
-    # Load saved weights
-    state_dict = torch.load(MODEL_PATH, map_location=torch.device("cpu"))
+    # ── 1. Try TorchScript (mobile-optimised) ──────────────
+    for pt_path in [MOBILE_MODEL_PATH, MODEL_PATH]:
+        if not os.path.isfile(pt_path):
+            continue
+        try:
+            model = torch.jit.load(pt_path, map_location=torch.device("cpu"))
+            model.eval()
+            return model, "torchscript"
+        except Exception:
+            pass   # not a TorchScript file → try next
 
-    # Handle case where model was saved with DataParallel wrapper
-    if any(k.startswith("module.") for k in state_dict.keys()):
-        state_dict = {k.replace("module.", ""): v for k, v in state_dict.items()}
+    # ── 2. Try ResNet-50 state_dict ────────────────────────
+    if os.path.isfile(MODEL_PATH):
+        model = models.resnet50(weights=None)
+        model.fc = torch.nn.Linear(model.fc.in_features, num_classes)
 
-    model.load_state_dict(state_dict)
-    model.eval()
-    return model
+        state_dict = torch.load(MODEL_PATH, map_location=torch.device("cpu"))
+
+        # Strip DataParallel "module." prefix if present
+        if any(k.startswith("module.") for k in state_dict.keys()):
+            state_dict = {k.replace("module.", ""): v for k, v in state_dict.items()}
+
+        model.load_state_dict(state_dict)
+        model.eval()
+        return model, "resnet50"
+
+    raise FileNotFoundError(
+        f"No model file found. Expected one of:\n"
+        f"  {MOBILE_MODEL_PATH}\n"
+        f"  {MODEL_PATH}"
+    )
 
 
 # ─── Image preprocessing ───────────────────────────────────
@@ -81,7 +95,7 @@ transform = transforms.Compose([
     transforms.Resize((IMAGE_SIZE, IMAGE_SIZE)),
     transforms.ToTensor(),
     transforms.Normalize(
-        mean=[0.485, 0.456, 0.406],  # ImageNet defaults
+        mean=[0.485, 0.456, 0.406],   # ImageNet defaults
         std=[0.229, 0.224, 0.225],
     ),
 ])
@@ -90,42 +104,41 @@ transform = transforms.Compose([
 # ─── Predict ────────────────────────────────────────────────
 def predict(image_path):
     class_names = load_class_names()
-    num_classes = len(class_names)
+    num_classes  = len(class_names)
 
-    model = load_model(num_classes)
+    model, model_type = load_model(num_classes)
 
     # Load and preprocess image
-    image = Image.open(image_path).convert("RGB")
-    input_tensor = transform(image).unsqueeze(0)  # Add batch dimension
+    image        = Image.open(image_path).convert("RGB")
+    input_tensor = transform(image).unsqueeze(0)   # [1, 3, H, W]
 
     # Run inference
     with torch.no_grad():
-        output = model(input_tensor)
+        output        = model(input_tensor)
         probabilities = F.softmax(output, dim=1)[0]
 
     # Get top-k predictions
     top_k_probs, top_k_indices = torch.topk(probabilities, min(TOP_K, num_classes))
 
-    predictions = []
-    for prob, idx in zip(top_k_probs, top_k_indices):
-        predictions.append({
-            "label": class_names.get(idx.item(), f"class_{idx.item()}"),
+    predictions = [
+        {
+            "label":      class_names.get(idx.item(), f"class_{idx.item()}"),
             "confidence": round(prob.item(), 4),
-        })
+        }
+        for prob, idx in zip(top_k_probs, top_k_indices)
+    ]
 
-    # Top prediction
-    top_label = predictions[0]["label"]
+    top_label      = predictions[0]["label"]
     top_confidence = predictions[0]["confidence"]
-    status = "healthy" if "healthy" in top_label.lower() else "infected"
+    status         = "healthy" if "healthy" in top_label.lower() else "infected"
 
-    result = {
-        "disease": top_label,
+    return {
+        "disease":    top_label,
         "confidence": top_confidence,
-        "status": status,
+        "status":     status,
         "predictions": predictions,
+        "model_type": model_type,   # debug info
     }
-
-    return result
 
 
 # ─── Main ───────────────────────────────────────────────────
