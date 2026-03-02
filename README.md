@@ -14,8 +14,6 @@ An intelligent web platform that helps farmers and agronomists detect crop disea
 
 [🚀 Live Demo](#) · [📖 Documentation](#-documentation) · [🐛 Report a Bug](https://github.com/your-username/agro-ai-health/issues) · [✨ Request Feature](https://github.com/your-username/agro-ai-health/issues)
 
-</div>
-
 ---
 
 ## 📸 Preview
