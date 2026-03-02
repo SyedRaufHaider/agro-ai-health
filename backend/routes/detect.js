@@ -19,9 +19,31 @@ if (useS3) {
     uploadMiddleware = s3Upload.single("image");
     getImageUrl = async (file) => await uploadToS3(file.buffer, file.mimetype, "scans");
 } else {
-    const { upload } = require("../config/cloudinary");
-    uploadMiddleware = upload.single("image");
-    getImageUrl = async (file) => file.path; // Cloudinary auto-populates file.path
+    // Use memory storage so req.file.buffer is always available for AI inference.
+    // We upload the buffer manually to Cloudinary after.
+    const multer = require("multer");
+    const { cloudinary } = require("../config/cloudinary");
+
+    uploadMiddleware = multer({
+        storage: multer.memoryStorage(),
+        limits: { fileSize: 10 * 1024 * 1024 },
+        fileFilter: (req, file, cb) => {
+            if (file.mimetype.startsWith("image/")) cb(null, true);
+            else cb(new Error("Only image files are allowed"), false);
+        },
+    }).single("image");
+
+    getImageUrl = (file) =>
+        new Promise((resolve, reject) => {
+            const stream = cloudinary.uploader.upload_stream(
+                { folder: "agro-ai-health", resource_type: "image" },
+                (err, result) => {
+                    if (err) return reject(err);
+                    resolve(result.secure_url);
+                }
+            );
+            stream.end(file.buffer);
+        });
 }
 
 // ─── Helper: run Python prediction script ─────────────────────
@@ -90,8 +112,8 @@ router.post("/", protect, uploadMiddleware, async (req, res, next) => {
         // 1. Upload image to storage (S3 or Cloudinary)
         const imageUrl = await getImageUrl(req.file);
 
-        // 2. Get the image buffer for AI prediction
-        const imageBuffer = req.file.buffer || fs.readFileSync(req.file.path);
+        // 2. Get the image buffer (always available via memory storage)
+        const imageBuffer = req.file.buffer;
 
         // 3. Write to temp file for Python script
         tempPath = path.join(os.tmpdir(), `agro_scan_${Date.now()}.jpg`);
