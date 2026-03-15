@@ -9,6 +9,8 @@ import { useToast } from "@/hooks/use-toast";
 import { api } from "@/lib/api";
 
 const Login = () => {
+  const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1')
+    .replace('/api/v1', ''); // strip /api/v1 to get base URL
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -109,7 +111,7 @@ const Login = () => {
               <Button
                 type="button"
                 className="w-full flex items-center justify-center gap-2"
-                onClick={() => { window.location.href = "http://localhost:5000/api/v1/auth/google"; }}
+                onClick={() => { window.location.href = `${API_URL}/api/v1/auth/google`; }}
               >
                 <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
                   <path
@@ -135,7 +137,7 @@ const Login = () => {
               <Button
                 type="button"
                 className="w-full flex items-center justify-center gap-2"
-                onClick={() => { window.location.href = "http://localhost:5000/api/v1/auth/facebook"; }}
+                onClick={() => { window.location.href = `${API_URL}/api/v1/auth/facebook`; }}
               >
                 <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor" aria-hidden="true">
                   <path d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" />
