@@ -36,6 +36,7 @@ app.use(
 
 // ─── API Routes ───────────────────────────────────────────────────
 app.use("/api/v1/auth", require("./routes/auth"));
+app.use("/api/v1/auth", require("./routes/oauth"));   // Google + Facebook OAuth
 app.use("/api/v1/crops", require("./routes/crops"));
 app.use("/api/v1/diseases", require("./routes/diseases"));
 app.use("/api/v1/detect", require("./routes/detect"));
