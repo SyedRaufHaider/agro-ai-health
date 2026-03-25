@@ -63,7 +63,7 @@ const DiseaseTrends = () => {
                         <Skeleton className="h-40 w-full rounded-lg" />
                     </div>
                 ) : (
-                    <div className="max-w-3xl">
+                    <div className="max-w-4xl">
                         <DiseaseTrendList scans={scans} />
                     </div>
                 )}

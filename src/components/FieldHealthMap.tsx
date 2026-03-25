@@ -157,13 +157,23 @@ export const FieldHealthMap = ({ scans = [] }: FieldHealthMapProps) => {
                 savedFields.forEach((field) => {
                     const polygon = L.polygon(field.latlngs, {
                         color: field.color,
-                        fillOpacity: 0.3,
-                        weight: 2,
+                        fillOpacity: 0.35,
+                        weight: 3,
                     })
+                        .addTo(map)   // ← render the polygon on the map
                         .bindPopup(`<b>${field.name}</b><br/>${calcAcres(field.latlngs)} acres`);
                     polygonsRef.current[field.id] = polygon;
                 });
                 setFields(savedFields);
+
+                // Zoom to fit all saved fields if any exist
+                const allLayers = savedFields
+                    .map((f) => polygonsRef.current[f.id])
+                    .filter(Boolean);
+                if (allLayers.length > 0) {
+                    const group = L.featureGroup(allLayers);
+                    map.fitBounds(group.getBounds(), { padding: [40, 40], maxZoom: 15 });
+                }
             }
         } catch { /* ignore corrupt storage */ }
     }, [leafletLoaded]);

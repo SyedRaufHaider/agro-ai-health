@@ -54,7 +54,7 @@ const CropCalendarPage = () => {
                 </div>
 
                 {/* Content */}
-                <div className="overflow-x-auto">
+                <div className="w-full max-w-4xl mx-auto">
                     <CropCalendar scans={scans} />
                 </div>
             </main>
