@@ -1,19 +1,22 @@
 """
 Agro AI - Plant Disease Detection API
-FastAPI app for Hugging Face Spaces
+FastAPI app using Keras (.keras) model directly
 """
 import json
 import io
 import os
+import os
+os.environ["KERAS_BACKEND"] = "tensorflow"
 import numpy as np
-import onnxruntime as ort
+import tensorflow as tf
+import keras
 from PIL import Image
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="Agro AI - Plant Disease Detection API")
 
-# Allow all origins (Render backend will call this)
+# Allow all origins (Render backend / Flutter app will call this)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -23,32 +26,28 @@ app.add_middleware(
 
 # ─── Load model + class names once at startup ─────────────────────
 SCRIPT_DIR       = os.path.dirname(os.path.abspath(__file__))
-MODEL_PATH       = os.path.join(SCRIPT_DIR, "plant_disease_model.onnx")
+MODEL_PATH       = os.path.join(SCRIPT_DIR, "plant_disease_model_patched.keras")
 CLASS_NAMES_PATH = os.path.join(SCRIPT_DIR, "class_names.json")
 
-print("Loading ONNX model...")
-session = ort.InferenceSession(MODEL_PATH, providers=["CPUExecutionProvider"])
-input_name = session.get_inputs()[0].name
+print("Loading Keras model...")
+model = keras.models.load_model(MODEL_PATH, compile=False)
 print("✅ Model loaded!")
+print(f"   Input  shape : {model.input_shape}")
+print(f"   Output shape : {model.output_shape}")
 
 with open(CLASS_NAMES_PATH) as f:
     CLASS_NAMES = json.load(f)   # { "0": "Apple___Apple_scab", ... }
 
 # ─── Image preprocessing ──────────────────────────────────────────
-MEAN = np.array([0.485, 0.456, 0.406], dtype=np.float32)
-STD  = np.array([0.229, 0.224, 0.225], dtype=np.float32)
+# Matches training pipeline exactly:
+#   image_dataset_from_directory(image_size=(128,128)) → raw float32 [0–255]
+#   No Rescaling / Normalization layer found in model → pass raw pixels
 
 def preprocess(image_bytes: bytes) -> np.ndarray:
-    # Model expects 64x64 input (as seen in the ONNXRuntimeError diff)
-    img = Image.open(io.BytesIO(image_bytes)).convert("RGB").resize((64, 64))
-    arr = np.array(img, dtype=np.float32) / 255.0
-    arr = (arr - MEAN) / STD
-    arr = arr.transpose(2, 0, 1)           # HWC → CHW
-    return np.expand_dims(arr, axis=0)     # → [1, 3, 64, 64]
-
-def softmax(x: np.ndarray) -> np.ndarray:
-    e = np.exp(x - np.max(x))
-    return e / e.sum()
+    """Resize to 128x128, pass raw pixels [0-255]. Returns (1, 128, 128, 3)."""
+    img = Image.open(io.BytesIO(image_bytes)).convert("RGB").resize((128, 128))
+    arr = np.array(img, dtype=np.float32)   # raw pixels - matches training
+    return np.expand_dims(arr, axis=0)      # → (1, 128, 128, 3)
 
 
 # ─── Routes ───────────────────────────────────────────────────────
@@ -63,16 +62,11 @@ async def predict(image: UploadFile = File(...)):
     Upload a plant leaf image and get disease prediction.
     Returns: disease label, confidence, status, top-3 predictions.
     """
-    # Validate file type
-    if not image.content_type.startswith("image/"):
-        raise HTTPException(status_code=400, detail="File must be an image")
-
     image_bytes = await image.read()
 
     try:
         input_tensor  = preprocess(image_bytes)
-        logits        = session.run(None, {input_name: input_tensor})[0][0]
-        probabilities = softmax(logits)
+        probabilities = model.predict(input_tensor, verbose=0)[0]   # already softmax output
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Inference failed: {str(e)}")
 
@@ -87,6 +81,21 @@ async def predict(image: UploadFile = File(...)):
     ]
 
     top_label = predictions[0]["label"]
+
+    # Confidence threshold: reject predictions below 60% to avoid wrong
+    # results for plants not in the training data (Peach, Cherry, Mango, etc.)
+    CONFIDENCE_THRESHOLD = 0.60
+    SUPPORTED_PLANTS = "Apple, Blueberry, Cherry, Corn, Grape, Orange, Peach, Pepper, Potato, Raspberry, Soybean, Squash, Strawberry, Tomato"
+
+    if predictions[0]["confidence"] < CONFIDENCE_THRESHOLD:
+        return {
+            "disease":     "Unrecognized Plant",
+            "confidence":  predictions[0]["confidence"],
+            "status":      "unrecognized",
+            "message":     f"Plant not recognized or image quality too low. "
+                           f"Supported plants: {SUPPORTED_PLANTS}.",
+            "predictions": predictions,
+        }
 
     return {
         "disease":     top_label,

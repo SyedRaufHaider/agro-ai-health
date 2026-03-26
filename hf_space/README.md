@@ -10,7 +10,7 @@ pinned: false
 
 # 🌿 Agro AI — Plant Disease Detection API
 
-FastAPI + ONNX Runtime inference API for plant disease detection.
+FastAPI + Keras 3 inference API for plant disease detection.
 
 ## Endpoint
 
@@ -32,6 +32,7 @@ Upload a plant leaf image and get disease prediction.
   ]
 }
 ```
+*(Note: If confidence is below 60%, the API automatically returns `status: "unrecognized"` to handle unsupported non-plant artifacts or blurry images.)*
 
 ### `GET /`
 Health check.

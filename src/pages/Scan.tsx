@@ -24,6 +24,8 @@ import { useState, useCallback, useRef } from "react";
 interface ScanResult {
   disease: string;
   confidence: number;
+  status?: string;
+  message?: string;
   recommendations: string[];
   medicines: { name: string; description?: string }[];
 }
@@ -98,6 +100,7 @@ const Scan = () => {
   };
 
   const isHealthy = result?.disease?.toLowerCase().includes("healthy");
+  const isUnrecognized = result?.status === "unrecognized" || result?.disease === "Unrecognized Plant";
   const confidencePct = result ? Math.round(result.confidence * 100) : 0;
 
   return (
@@ -261,12 +264,16 @@ const Scan = () => {
                     {/* Diagnosis header */}
                     <div className="flex items-center gap-4">
                       <div
-                        className={`h-14 w-14 rounded-full flex items-center justify-center flex-shrink-0 ${isHealthy
+                        className={`h-14 w-14 rounded-full flex items-center justify-center flex-shrink-0 ${isUnrecognized
+                            ? "bg-muted text-muted-foreground"
+                            : isHealthy
                             ? "bg-green-500/10 text-green-500"
                             : "bg-orange-500/10 text-orange-500"
                           }`}
                       >
-                        {isHealthy ? (
+                        {isUnrecognized ? (
+                            <AlertTriangle className="h-7 w-7" />
+                        ) : isHealthy ? (
                           <CheckCircle className="h-7 w-7" />
                         ) : (
                           <AlertTriangle className="h-7 w-7" />
@@ -287,7 +294,7 @@ const Scan = () => {
                           Confidence Score
                         </span>
                         <span
-                          className={`font-semibold ${isHealthy ? "text-green-500" : "text-orange-500"
+                          className={`font-semibold ${isUnrecognized ? "text-muted-foreground" : isHealthy ? "text-green-500" : "text-orange-500"
                             }`}
                         >
                           {confidencePct}%
@@ -298,6 +305,19 @@ const Scan = () => {
                         className="h-2"
                       />
                     </div>
+
+                    {/* Custom Message for Unrecognized */}
+                    {isUnrecognized && result.message && (
+                      <div className="rounded-lg border border-muted bg-muted/40 p-4 text-sm text-foreground space-y-2">
+                        <p className="font-semibold flex items-center gap-2">
+                          <AlertTriangle className="h-4 w-4" />
+                          Cannot Identify Plant
+                        </p>
+                        <p className="text-muted-foreground leading-relaxed">
+                          {result.message}
+                        </p>
+                      </div>
+                    )}
 
                     {/* Recommendations */}
                     {result.recommendations?.length > 0 && (
@@ -330,7 +350,7 @@ const Scan = () => {
                         <div className="flex flex-wrap gap-2">
                           {result.medicines.map((med, i) => (
                             <Badge key={i} variant="secondary">
-                              {med.name || med}
+                              {typeof med === "string" ? med : (med.name || "Medicine")}
                             </Badge>
                           ))}
                         </div>

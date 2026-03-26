@@ -29,7 +29,7 @@ const DetectionSchema = new mongoose.Schema(
         },
         status: {
             type: String,
-            enum: ["healthy", "infected", "unknown"],
+            enum: ["healthy", "infected", "unknown", "unrecognized"],
             default: "unknown",
         },
         // Additional AI results (top-k predictions)

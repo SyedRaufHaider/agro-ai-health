@@ -15,7 +15,7 @@ let uploadMiddleware;
 let getImageUrl;
 
 if (useS3) {
-    const { s3Upload, uploadToS3 } = require("../config/s3");
+    const { s3Upload, uploadToS3, getSignedS3Url } = require("../config/s3");
     uploadMiddleware = s3Upload.single("image");
     getImageUrl = async (file) => await uploadToS3(file.buffer, file.mimetype, "scans");
 } else {
@@ -53,6 +53,7 @@ const MODEL_FILE_MOBILE = path.join(ML_DIR, "agroai_mobile.pt");
 const MODEL_FILE_ONNX = path.join(ML_DIR, "plant_disease_model.onnx");
 const PYTHON_BIN = process.env.PYTHON_PATH || "python";
 const HF_MODEL_URL = process.env.HF_MODEL_URL; // e.g. https://user-space.hf.space
+console.log(`[AI] HF_MODEL_URL from env: "${HF_MODEL_URL}"`);
 
 /** Returns true if at least one local model file is present */
 const modelExists = () =>
@@ -85,7 +86,13 @@ async function runPrediction(imagePath) {
             const lib = url.protocol === "https:" ? require("https") : require("http");
 
             const req = lib.request(
-                { hostname: url.hostname, path: url.pathname, method: "POST", headers: form.getHeaders() },
+                {
+                    hostname: url.hostname,
+                    port: url.port || (url.protocol === "https:" ? 443 : 80),
+                    path: url.pathname,
+                    method: "POST",
+                    headers: form.getHeaders(),
+                },
                 (res) => {
                     let data = "";
                     res.on("data", (chunk) => (data += chunk));
@@ -253,13 +260,23 @@ router.get("/history", protect, async (req, res, next) => {
 
         const total = await Detection.countDocuments({ userId: req.user._id });
 
+        // Sign the image URLs if using S3
+        const processImageUrl = useS3 ? require("../config/s3").getSignedS3Url : async (url) => url;
+        const signedDetections = await Promise.all(detections.map(async (d) => {
+            const doc = d.toObject();
+            if (doc.imageUrl) {
+                doc.imageUrl = await processImageUrl(doc.imageUrl);
+            }
+            return doc;
+        }));
+
         res.json({
             success: true,
-            count: detections.length,
+            count: signedDetections.length,
             total,
             page,
             pages: Math.ceil(total / limit),
-            data: detections,
+            data: signedDetections,
         });
     } catch (error) {
         next(error);
@@ -288,7 +305,13 @@ router.get("/:id", protect, async (req, res, next) => {
                 .json({ success: false, message: "Not authorized" });
         }
 
-        res.json({ success: true, data: detection });
+        const processImageUrl = useS3 ? require("../config/s3").getSignedS3Url : async (url) => url;
+        const doc = detection.toObject();
+        if (doc.imageUrl) {
+            doc.imageUrl = await processImageUrl(doc.imageUrl);
+        }
+
+        res.json({ success: true, data: doc });
     } catch (error) {
         next(error);
     }

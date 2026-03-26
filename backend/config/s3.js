@@ -70,4 +70,29 @@ async function deleteFromS3(fileUrl) {
     }
 }
 
-module.exports = { s3Client, s3Upload, uploadToS3, deleteFromS3 };
+// ─── Get Presigned URL ───────────────────────────────
+const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
+const { GetObjectCommand } = require("@aws-sdk/client-s3");
+
+async function getSignedS3Url(fileUrl) {
+    try {
+        // If it's not an S3 URL, return it as-is (e.g. Cloudinary)
+        if (!fileUrl.includes("amazonaws.com")) return fileUrl;
+
+        const url = new URL(fileUrl);
+        const key = url.pathname.slice(1);
+        
+        const command = new GetObjectCommand({
+            Bucket: BUCKET,
+            Key: key,
+        });
+        
+        // URL expires in 1 hour (3600 seconds)
+        return await getSignedUrl(s3Client, command, { expiresIn: 3600 });
+    } catch (error) {
+        console.error("S3 presign error:", error.message);
+        return fileUrl; // fallback to original
+    }
+}
+
+module.exports = { s3Client, s3Upload, uploadToS3, deleteFromS3, getSignedS3Url };
