@@ -46,29 +46,17 @@ if (useS3) {
         });
 }
 
-// ─── Helper: run Python prediction script ─────────────────────
-const ML_DIR = path.join(__dirname, "..", "ml_models");
-const MODEL_FILE_PRIMARY = path.join(ML_DIR, "plant_disease_model.pt");
-const MODEL_FILE_MOBILE = path.join(ML_DIR, "agroai_mobile.pt");
-const MODEL_FILE_ONNX = path.join(ML_DIR, "plant_disease_model.onnx");
+// ─── Helper: run prediction via FastAPI ───────────────────────
 const PYTHON_BIN = process.env.PYTHON_PATH || "python";
-const HF_MODEL_URL = process.env.HF_MODEL_URL; // e.g. https://user-space.hf.space
+const HF_MODEL_URL = process.env.HF_MODEL_URL; // FastAPI URL: http://127.0.0.1:8000 or https://your-space.hf.space
 console.log(`[AI] HF_MODEL_URL from env: "${HF_MODEL_URL}"`);
 
-/** Returns true if at least one local model file is present */
-const modelExists = () =>
-    !!HF_MODEL_URL ||                          // HF API counts as "model available"
-    fs.existsSync(MODEL_FILE_ONNX) ||
-    fs.existsSync(MODEL_FILE_PRIMARY) ||
-    fs.existsSync(MODEL_FILE_MOBILE);
+/** Returns true if the FastAPI AI server is configured */
+const modelExists = () => !!HF_MODEL_URL;
 
 /**
- * Run prediction via HF Space API (HTTP) or local Python script.
- *
- * Priority:
- *   1. HF_MODEL_URL set  → HTTP call to HF Space FastAPI
- *   2. Local .onnx found → spawn predict_onnx.py
- *   3. Local .pt found   → spawn predict.py (PyTorch)
+ * Run prediction via FastAPI (local or Hugging Face Space).
+ * Requires HF_MODEL_URL to be set in .env
  */
 async function runPrediction(imagePath) {
     // ── Mode 1: Call Hugging Face Space API ──────────────────────
@@ -226,7 +214,7 @@ router.post("/", protect, uploadMiddleware, async (req, res, next) => {
         }
 
         if (!modelExists()) {
-            response.message = "AI model not loaded. Place plant_disease_model.onnx (recommended) or plant_disease_model.pt / agroai_mobile.pt in backend/ml_models/ to enable predictions.";
+            response.message = "AI API not configured. Please set HF_MODEL_URL in .env to point to your FastAPI server.";
         }
 
         res.status(201).json(response);

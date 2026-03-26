@@ -4,7 +4,6 @@ const path = require("path");
 const dotenv = require("dotenv");
 const connectDB = require("./config/db");
 const errorHandler = require("./middleware/errorHandler");
-const { ensureModel } = require("./config/downloadModel");
 
 // Load env variables
 dotenv.config();
@@ -58,13 +57,6 @@ app.use(errorHandler);
 const PORT = process.env.PORT || 5000;
 
 async function start() {
-    try {
-        // Download ONNX model from Cloudinary if not already on disk
-        await ensureModel();
-    } catch (err) {
-        console.error("⚠️  Model download failed (AI disabled):", err.message);
-    }
-
     app.listen(PORT, () => {
         console.log(`🚀 Server running on port ${PORT}`);
     });
