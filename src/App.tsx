@@ -20,6 +20,7 @@ import DiseaseTrends from "./pages/DiseaseTrends";
 import CropCalendarPage from "./pages/CropCalendarPage";
 import FieldHealthMapPage from "./pages/FieldHealthMapPage";
 import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import TermsOfService from "./pages/TermsOfService";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import FAQs from "./pages/FAQs";
@@ -53,6 +54,7 @@ const App = () => (
             <Route path="/crop-calendar" element={<ProtectedRoute><CropCalendarPage /></ProtectedRoute>} />
             <Route path="/field-health-map" element={<ProtectedRoute><FieldHealthMapPage /></ProtectedRoute>} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/terms-of-service" element={<TermsOfService />} />
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />
             <Route path="/faqs" element={<FAQs />} />

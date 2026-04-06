@@ -56,6 +56,12 @@ export const api = {
       body: JSON.stringify({ email }),
     }),
 
+  resetPassword: (token: string, password: string) =>
+    apiCall<{ success: boolean; token: string; user: any; message: string }>('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ token, password }),
+    }),
+
   // Plant Disease Scan
   scanPlant: (imageFile: File) => {
     const formData = new FormData();
