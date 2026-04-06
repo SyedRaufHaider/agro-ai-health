@@ -1,43 +1,46 @@
-const nodemailer = require("nodemailer");
+const fetch = require("node-fetch");
+
+const BREVO_API_URL = "https://api.brevo.com/v3/smtp/email";
 
 /**
- * Send an email via SMTP
+ * Send an email via Brevo HTTP API (works on all hosting platforms)
  * @param {Object} options - { to, subject, html }
  */
 const sendEmail = async ({ to, subject, html }) => {
-    if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASS) {
-        throw new Error("SMTP environment variables are not configured. Please set SMTP_HOST, SMTP_USER, and SMTP_PASS.");
+    if (!process.env.BREVO_API_KEY) {
+        throw new Error("BREVO_API_KEY is not set in environment variables.");
     }
 
-    const port = Number(process.env.SMTP_PORT) || 587;
-    const secure = port === 465; // true for 465, false for 587
-
-    const transporter = nodemailer.createTransport({
-        host: process.env.SMTP_HOST,
-        port,
-        secure,
-        auth: {
-            user: process.env.SMTP_USER,
-            pass: process.env.SMTP_PASS,
+    const payload = {
+        sender: {
+            name: process.env.SMTP_FROM_NAME || "Agro AI Health",
+            email: process.env.SMTP_FROM_EMAIL,
         },
-        connectionTimeout: 10000,  // 10 seconds
-        greetingTimeout: 10000,
-        socketTimeout: 15000,
-        tls: {
-            rejectUnauthorized: false,
-        },
-    });
-
-    const mailOptions = {
-        from: `"${process.env.SMTP_FROM_NAME || "Agro AI Health"}" <${process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER}>`,
-        to,
+        to: [{ email: to }],
         subject,
-        html,
+        htmlContent: html,
     };
 
-    const info = await transporter.sendMail(mailOptions);
-    console.log(`📧 Email sent to ${to} | ID: ${info.messageId}`);
-    return info;
+    const response = await fetch(BREVO_API_URL, {
+        method: "POST",
+        headers: {
+            "api-key": process.env.BREVO_API_KEY,
+            "Content-Type": "application/json",
+            Accept: "application/json",
+        },
+        body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(
+            `Brevo API error: ${response.status} — ${error.message || response.statusText}`
+        );
+    }
+
+    const result = await response.json();
+    console.log(`📧 Email sent to ${to} | Message ID: ${result.messageId}`);
+    return result;
 };
 
 module.exports = sendEmail;
