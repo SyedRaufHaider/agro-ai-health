@@ -88,7 +88,17 @@ export const FieldHealthMap = ({ scans = [] }: FieldHealthMapProps) => {
     const [editName, setEditName] = useState("");
     const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null);
 
-    const STORAGE_KEY = "agro_ai_fields";
+    // Build a user-specific storage key so each account's fields are isolated
+    const getUserStorageKey = () => {
+        try {
+            const user = JSON.parse(localStorage.getItem("user") || "{}");
+            const uid = user._id || user.id || "guest";
+            return `agro_ai_fields_${uid}`;
+        } catch {
+            return "agro_ai_fields_guest";
+        }
+    };
+    const STORAGE_KEY = getUserStorageKey();
 
     // Dynamically load Leaflet CSS + JS
     useEffect(() => {

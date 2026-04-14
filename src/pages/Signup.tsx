@@ -16,12 +16,25 @@ const Signup = () => {
     confirmPassword: "",
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [nameError, setNameError] = useState("");
   const [emailError, setEmailError] = useState("");
   const navigate = useNavigate();
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validate Full Name
+    const nameVal = formData.name.trim();
+    if (nameVal.length < 2) {
+      setNameError("Name must be at least 2 characters.");
+      return;
+    }
+    if (!/^[a-zA-Z\s]+$/.test(nameVal)) {
+      setNameError("Name can only contain letters and spaces.");
+      return;
+    }
+    setNameError("");
 
     if (formData.password !== formData.confirmPassword) {
       toast({
@@ -74,7 +87,7 @@ const Signup = () => {
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Clear inline email error as soon as the user edits the email field
+    if (e.target.id === "name") setNameError("");
     if (e.target.id === "email") setEmailError("");
     setFormData({
       ...formData,
@@ -106,7 +119,25 @@ const Signup = () => {
                   placeholder="John Doe"
                   required
                   disabled={isLoading}
+                  className={nameError ? "border-red-500 focus-visible:ring-red-500" : ""}
                 />
+                {nameError && (
+                  <p className="mt-1.5 flex items-center gap-1.5 text-sm text-red-500">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-4 w-4 shrink-0"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm8.706-1.442c1.146-.573 2.437.463 2.126 1.706l-.709 2.836.042-.02a.75.75 0 01.67 1.34l-.04.022c-1.147.573-2.438-.463-2.127-1.706l.71-2.836-.042.02a.75.75 0 11-.671-1.34l.041-.022zM12 9a.75.75 0 100-1.5.75.75 0 000 1.5z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    {nameError}
+                  </p>
+                )}
               </div>
 
               <div>
