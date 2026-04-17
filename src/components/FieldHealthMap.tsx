@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import { MapPin, Trash2, PlusCircle, Save, CheckCircle2, Pencil, X, Activity, ShieldCheck, AlertTriangle, Clock } from "lucide-react";
+import { useEffect, useRef, useState, useCallback } from "react";
+import { MapPin, Trash2, PlusCircle, Save, CheckCircle2, Pencil, X, Activity, ShieldCheck, AlertTriangle, Clock, Loader2 } from "lucide-react";
 import {
     Card,
     CardContent,
@@ -11,13 +11,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
 declare global {
-    interface Window {
-        L: any;
-    }
+    interface Window { L: any; }
 }
 
 interface Field {
-    id: string;
+    _id: string;
     name: string;
     latlngs: [number, number][];
     color: string;
@@ -29,171 +27,143 @@ interface ScanRecord {
     disease: string;
     confidence: number;
     createdAt: string;
+    fieldId?: string | null;
 }
 
 interface FieldHealthMapProps {
     scans?: ScanRecord[];
 }
 
-const FIELD_COLORS = [
-    "#22c55e", "#3b82f6", "#f97316", "#a855f7", "#eab308", "#06b6d4",
-];
-
+const FIELD_COLORS = ["#22c55e", "#3b82f6", "#f97316", "#a855f7", "#eab308", "#06b6d4"];
 const PAKISTAN_CENTER: [number, number] = [30.3753, 69.3451];
+const API_BASE = import.meta.env.VITE_API_URL || "https://agro-ai-backend-3fxh.onrender.com/api/v1";
 
-// Calculate polygon area in acres from lat/lng using Shoelace formula
+const getToken = () => localStorage.getItem("token") || "";
+
 const calcAcres = (latlngs: [number, number][]): number => {
     if (latlngs.length < 3) return 0;
     const toRad = (d: number) => (d * Math.PI) / 180;
     let area = 0;
     for (let i = 0; i < latlngs.length; i++) {
         const j = (i + 1) % latlngs.length;
-        area +=
-            toRad(latlngs[j][1] - latlngs[i][1]) *
+        area += toRad(latlngs[j][1] - latlngs[i][1]) *
             (2 + Math.sin(toRad(latlngs[i][0])) + Math.sin(toRad(latlngs[j][0])));
     }
     area = Math.abs((area * 6378137 * 6378137) / 2);
     return Math.round((area / 4046.86) * 100) / 100;
 };
 
-// Format date for display
-const formatDate = (dateStr: string) => {
-    const d = new Date(dateStr);
-    return d.toLocaleDateString("en-PK", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-    });
-};
+const formatDate = (dateStr: string) =>
+    new Date(dateStr).toLocaleDateString("en-PK", { day: "numeric", month: "short", year: "numeric" });
 
-const formatTime = (dateStr: string) => {
-    const d = new Date(dateStr);
-    return d.toLocaleTimeString("en-PK", {
-        hour: "2-digit",
-        minute: "2-digit",
-    });
-};
+const formatTime = (dateStr: string) =>
+    new Date(dateStr).toLocaleTimeString("en-PK", { hour: "2-digit", minute: "2-digit" });
 
 export const FieldHealthMap = ({ scans = [] }: FieldHealthMapProps) => {
     const mapRef = useRef<HTMLDivElement>(null);
     const mapInstanceRef = useRef<any>(null);
     const [fields, setFields] = useState<Field[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
     const [drawing, setDrawing] = useState(false);
     const drawingRef = useRef<any>(null);
     const polygonsRef = useRef<Record<string, any>>({});
     const [leafletLoaded, setLeafletLoaded] = useState(false);
-    const [saved, setSaved] = useState(false);
-    const [hasUnsaved, setHasUnsaved] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
     const [editName, setEditName] = useState("");
     const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null);
 
-    // Build a user-specific storage key so each account's fields are isolated
-    const getUserStorageKey = () => {
-        try {
-            const user = JSON.parse(localStorage.getItem("user") || "{}");
-            const uid = user._id || user.id || "guest";
-            return `agro_ai_fields_${uid}`;
-        } catch {
-            return "agro_ai_fields_guest";
-        }
-    };
-    const STORAGE_KEY = getUserStorageKey();
+    // ── API helpers ────────────────────────────────────────────────────────
+    const apiFetch = useCallback(async (method: string, path: string, body?: object) => {
+        const res = await fetch(`${API_BASE}${path}`, {
+            method,
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${getToken()}`,
+            },
+            body: body ? JSON.stringify(body) : undefined,
+        });
+        if (!res.ok) throw new Error(`API error ${res.status}`);
+        return res.json();
+    }, []);
 
-    // Dynamically load Leaflet CSS + JS
+    // ── Load fields from backend ───────────────────────────────────────────
+    const loadFields = useCallback(async () => {
+        try {
+            setLoading(true);
+            const data = await apiFetch("GET", "/fields");
+            const loaded: Field[] = data.data || [];
+            setFields(loaded);
+
+            // Draw polygons on map if Leaflet is ready
+            if (mapInstanceRef.current && window.L) {
+                const L = window.L;
+                const map = mapInstanceRef.current;
+
+                // Clear existing polygons
+                Object.values(polygonsRef.current).forEach((p: any) => map.removeLayer(p));
+                polygonsRef.current = {};
+
+                loaded.forEach((field) => {
+                    const polygon = L.polygon(field.latlngs, {
+                        color: field.color, fillOpacity: 0.35, weight: 3,
+                    }).addTo(map).bindPopup(`<b>${field.name}</b><br/>${calcAcres(field.latlngs)} acres`);
+                    polygonsRef.current[field._id] = polygon;
+                });
+
+                if (loaded.length > 0) {
+                    const group = L.featureGroup(Object.values(polygonsRef.current));
+                    map.fitBounds(group.getBounds(), { padding: [40, 40], maxZoom: 15 });
+                }
+            }
+        } catch {
+            // Silently fail — user may not be logged in
+        } finally {
+            setLoading(false);
+        }
+    }, [apiFetch]);
+
+    // ── Load Leaflet ────────────────────────────────────────────────────────
     useEffect(() => {
         if (window.L) { setLeafletLoaded(true); return; }
-
         const link = document.createElement("link");
         link.rel = "stylesheet";
         link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
         document.head.appendChild(link);
-
         const script = document.createElement("script");
         script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
         script.onload = () => setLeafletLoaded(true);
         document.head.appendChild(script);
     }, []);
 
-    // Initialize map + restore saved fields
+    // ── Initialize map once Leaflet is ready ───────────────────────────────
     useEffect(() => {
         if (!leafletLoaded || !mapRef.current || mapInstanceRef.current) return;
-
         const L = window.L;
-        const map = L.map(mapRef.current, { zoomControl: true }).setView(
-            PAKISTAN_CENTER,
-            5
-        );
-
-        // Google Hybrid — satellite imagery WITH roads, city names & borders built in
-        const hybrid = L.tileLayer(
-            "https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}",
-            {
-                attribution: "© Google Maps",
-                maxZoom: 21,
-                subdomains: ["mt0", "mt1", "mt2", "mt3"],
-            }
-        );
-
-        // Pure satellite (no labels) — Google
-        const satellite = L.tileLayer(
-            "https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}",
-            { attribution: "© Google Maps", maxZoom: 21 }
-        );
-
-        // Street layer — OpenStreetMap
-        const street = L.tileLayer(
-            "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-            { attribution: "© OpenStreetMap contributors" }
-        );
-
-        // Add hybrid as default (satellite + labels)
+        const map = L.map(mapRef.current, { zoomControl: true }).setView(PAKISTAN_CENTER, 5);
+        const hybrid = L.tileLayer("https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}", {
+            attribution: "© Google Maps", maxZoom: 21,
+        });
+        const satellite = L.tileLayer("https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}", {
+            attribution: "© Google Maps", maxZoom: 21,
+        });
+        const street = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            attribution: "© OpenStreetMap contributors",
+        });
         hybrid.addTo(map);
-
-        // Layer control
         L.control.layers(
-            { "🛰️ Hybrid (Satellite + Labels)": hybrid, "🌍 Satellite Only": satellite, "🗺️ Street": street },
-            {},
-            { position: "topright" }
+            { "🛰️ Hybrid": hybrid, "🌍 Satellite": satellite, "🗺️ Street": street },
+            {}, { position: "topright" }
         ).addTo(map);
-
         mapInstanceRef.current = map;
+        loadFields();
+    }, [leafletLoaded, loadFields]);
 
-        // Restore saved fields from localStorage
-        try {
-            const saved = localStorage.getItem(STORAGE_KEY);
-            if (saved) {
-                const savedFields: Field[] = JSON.parse(saved);
-                savedFields.forEach((field) => {
-                    const polygon = L.polygon(field.latlngs, {
-                        color: field.color,
-                        fillOpacity: 0.35,
-                        weight: 3,
-                    })
-                        .addTo(map)   // ← render the polygon on the map
-                        .bindPopup(`<b>${field.name}</b><br/>${calcAcres(field.latlngs)} acres`);
-                    polygonsRef.current[field.id] = polygon;
-                });
-                setFields(savedFields);
-
-                // Zoom to fit all saved fields if any exist
-                const allLayers = savedFields
-                    .map((f) => polygonsRef.current[f.id])
-                    .filter(Boolean);
-                if (allLayers.length > 0) {
-                    const group = L.featureGroup(allLayers);
-                    map.fitBounds(group.getBounds(), { padding: [40, 40], maxZoom: 15 });
-                }
-            }
-        } catch { /* ignore corrupt storage */ }
-    }, [leafletLoaded]);
-
-    // Start drawing a new farm boundary polygon
+    // ── Draw new boundary ──────────────────────────────────────────────────
     const startDrawing = () => {
         const L = window.L;
         const map = mapInstanceRef.current;
         if (!map || !L) return;
-
         setDrawing(true);
         const points: [number, number][] = [];
         const color = FIELD_COLORS[fields.length % FIELD_COLORS.length];
@@ -204,36 +174,36 @@ export const FieldHealthMap = ({ scans = [] }: FieldHealthMapProps) => {
             const latlng: [number, number] = [e.latlng.lat, e.latlng.lng];
             points.push(latlng);
             polyline.setLatLngs(points);
-
-            const marker = L.circleMarker(latlng, {
-                radius: 5, color, fillOpacity: 1,
-            }).addTo(map);
+            const marker = L.circleMarker(latlng, { radius: 5, color, fillOpacity: 1 }).addTo(map);
             markers.push(marker);
         };
 
-        const onDblClick = (e: any) => {
+        const onDblClick = async (e: any) => {
             map.off("click", onClick);
             map.off("dblclick", onDblClick);
-
-            // Clean up drawing artifacts
             map.removeLayer(polyline);
             markers.forEach((m) => map.removeLayer(m));
 
             if (points.length < 3) { setDrawing(false); return; }
 
-            const id = `field-${Date.now()}`;
-            const name = `Field ${fields.length + 1}`;
-            const polygon = L.polygon(points, { color, fillOpacity: 0.3, weight: 2 })
-                .addTo(map)
-                .bindPopup(`<b>${name}</b><br/>${calcAcres(points)} acres`);
+            setSaving(true);
+            try {
+                const name = `Field ${fields.length + 1}`;
+                const res = await apiFetch("POST", "/fields", { name, color, latlngs: points });
+                const newField: Field = res.data;
 
-            polygonsRef.current[id] = polygon;
-
-            setFields((prev) => [...prev, { id, name, latlngs: points, color }]);
-            setDrawing(false);
-            setHasUnsaved(true);
-            setSaved(false);
-            drawingRef.current = null;
+                const polygon = L.polygon(newField.latlngs, { color, fillOpacity: 0.3, weight: 2 })
+                    .addTo(map)
+                    .bindPopup(`<b>${newField.name}</b><br/>${calcAcres(newField.latlngs)} acres`);
+                polygonsRef.current[newField._id] = polygon;
+                setFields((prev) => [...prev, newField]);
+            } catch {
+                alert("Failed to save field. Please try again.");
+            } finally {
+                setSaving(false);
+                setDrawing(false);
+                drawingRef.current = null;
+            }
         };
 
         map.on("click", onClick);
@@ -250,27 +220,19 @@ export const FieldHealthMap = ({ scans = [] }: FieldHealthMapProps) => {
         drawingRef.current = null;
     };
 
-    const removeField = (id: string) => {
-        const map = mapInstanceRef.current;
-        if (polygonsRef.current[id]) {
-            map?.removeLayer(polygonsRef.current[id]);
-            delete polygonsRef.current[id];
+    const removeField = async (id: string) => {
+        try {
+            await apiFetch("DELETE", `/fields/${id}`);
+            const map = mapInstanceRef.current;
+            if (polygonsRef.current[id]) {
+                map?.removeLayer(polygonsRef.current[id]);
+                delete polygonsRef.current[id];
+            }
+            setFields((prev) => prev.filter((f) => f._id !== id));
+            if (selectedFieldId === id) setSelectedFieldId(null);
+        } catch {
+            alert("Could not delete field.");
         }
-        setFields((prev) => {
-            const updated = prev.filter((f) => f.id !== id);
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-            return updated;
-        });
-        if (selectedFieldId === id) setSelectedFieldId(null);
-        setSaved(true);
-        setHasUnsaved(false);
-    };
-
-    const saveFields = (currentFields: Field[]) => {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(currentFields));
-        setSaved(true);
-        setHasUnsaved(false);
-        setTimeout(() => setSaved(false), 3000);
     };
 
     const focusField = (id: string) => {
@@ -283,40 +245,32 @@ export const FieldHealthMap = ({ scans = [] }: FieldHealthMapProps) => {
         setSelectedFieldId(id);
     };
 
-    const startRename = (field: Field) => {
-        setEditingId(field.id);
-        setEditName(field.name);
-    };
+    const startRename = (field: Field) => { setEditingId(field._id); setEditName(field.name); };
 
-    const commitRename = (id: string) => {
+    const commitRename = async (id: string) => {
         const newName = editName.trim() || "Unnamed Field";
-        setFields((prev) =>
-            prev.map((f) => (f.id === id ? { ...f, name: newName } : f))
-        );
-        const polygon = polygonsRef.current[id];
-        const field = fields.find((f) => f.id === id);
-        if (polygon && field) {
-            polygon.setPopupContent(`<b>${newName}</b><br/>${calcAcres(field.latlngs)} acres`);
-        }
+        try {
+            await apiFetch("PUT", `/fields/${id}`, { name: newName });
+            setFields((prev) => prev.map((f) => (f._id === id ? { ...f, name: newName } : f)));
+            const polygon = polygonsRef.current[id];
+            const field = fields.find((f) => f._id === id);
+            if (polygon && field) polygon.setPopupContent(`<b>${newName}</b><br/>${calcAcres(field.latlngs)} acres`);
+        } catch { /* ignore */ }
         setEditingId(null);
-        setHasUnsaved(true);
-        setSaved(false);
     };
 
-    // ── Derive scan details for the selected field ──
-    const selectedField = fields.find((f) => f.id === selectedFieldId) || null;
-
-    // Get a few recent scans to show (up to 5)
-    const recentScans = scans
+    // ── Selected field + filtered scans ───────────────────────────────────
+    const selectedField = fields.find((f) => f._id === selectedFieldId) || null;
+    const fieldScans = scans.filter((s) => s.fieldId === selectedFieldId);
+    const recentScans = [...fieldScans]
         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
         .slice(0, 5);
 
-    // Summary stats from all scans
-    const totalScans = scans.length;
-    const healthyScans = scans.filter((s) => s.disease.toLowerCase() === "healthy").length;
+    const totalScans = fieldScans.length;
+    const healthyScans = fieldScans.filter((s) => s.disease.toLowerCase().includes("healthy")).length;
     const diseasedScans = totalScans - healthyScans;
     const avgConfidence = totalScans > 0
-        ? Math.round(scans.reduce((sum, s) => sum + s.confidence, 0) / totalScans)
+        ? Math.round(fieldScans.reduce((sum, s) => sum + s.confidence, 0) / totalScans)
         : 0;
 
     return (
@@ -326,59 +280,26 @@ export const FieldHealthMap = ({ scans = [] }: FieldHealthMapProps) => {
                     <CardTitle className="flex items-center gap-2">
                         <MapPin className="h-5 w-5 text-primary" />
                         Field Health Map
+                        {loading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground ml-1" />}
                     </CardTitle>
                     <CardDescription>
-                        Draw your farm boundaries on the map. Click to add points,
-                        double-click to close a polygon.
+                        Draw your farm boundaries on the map. Boundaries sync across web and mobile.
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3">
                     {/* Controls */}
                     <div className="flex flex-wrap items-center gap-2">
                         {!drawing ? (
-                            <>
-                                <Button size="sm" onClick={startDrawing} className="gap-1">
-                                    <PlusCircle className="h-4 w-4" />
-                                    Add Field Boundary
-                                </Button>
-
-                                {fields.length > 0 && (
-                                    <Button
-                                        size="sm"
-                                        variant={saved ? "outline" : "secondary"}
-                                        onClick={() => saveFields(fields)}
-                                        className={`gap-1.5 transition-all ${saved
-                                            ? "border-green-400 text-green-600 bg-green-50 dark:bg-green-950/30"
-                                            : hasUnsaved
-                                                ? "ring-2 ring-primary"
-                                                : ""
-                                            }`}
-                                    >
-                                        {saved ? (
-                                            <>
-                                                <CheckCircle2 className="h-4 w-4" />
-                                                Saved!
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Save className="h-4 w-4" />
-                                                Save Fields
-                                            </>
-                                        )}
-                                    </Button>
-                                )}
-                            </>
+                            <Button size="sm" onClick={startDrawing} disabled={saving} className="gap-1">
+                                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <PlusCircle className="h-4 w-4" />}
+                                {saving ? "Saving…" : "Add Field Boundary"}
+                            </Button>
                         ) : (
                             <>
                                 <Badge variant="outline" className="px-3 py-1.5 text-sm text-yellow-600 border-yellow-400 bg-yellow-50 dark:bg-yellow-950/30">
-                                    📍 Click map to add points — Double-click to close
+                                    📍 Click to add points — Double-click to close
                                 </Badge>
-                                <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={cancelDrawing}
-                                    className="text-muted-foreground"
-                                >
+                                <Button size="sm" variant="ghost" onClick={cancelDrawing} className="text-muted-foreground">
                                     Cancel
                                 </Button>
                             </>
@@ -386,14 +307,10 @@ export const FieldHealthMap = ({ scans = [] }: FieldHealthMapProps) => {
                     </div>
 
                     {/* Map */}
-                    <div
-                        ref={mapRef}
-                        className="w-full h-80 rounded-lg border border-border overflow-hidden bg-muted"
-                        style={{ zIndex: 0 }}
-                    >
+                    <div ref={mapRef} className="w-full h-80 rounded-lg border border-border overflow-hidden bg-muted" style={{ zIndex: 0 }}>
                         {!leafletLoaded && (
                             <div className="h-full flex items-center justify-center text-muted-foreground text-sm">
-                                Loading map...
+                                Loading map…
                             </div>
                         )}
                     </div>
@@ -402,43 +319,34 @@ export const FieldHealthMap = ({ scans = [] }: FieldHealthMapProps) => {
                     {fields.length > 0 && (
                         <div className="space-y-2">
                             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                                Your Fields — click a name to view details
+                                Your Fields — click a name to view scans
                             </p>
                             {fields.map((field) => (
                                 <div
-                                    key={field.id}
-                                    className={`flex items-center justify-between p-2.5 rounded-lg text-sm transition-all cursor-pointer ${selectedFieldId === field.id
+                                    key={field._id}
+                                    className={`flex items-center justify-between p-2.5 rounded-lg text-sm transition-all cursor-pointer ${selectedFieldId === field._id
                                         ? "bg-emerald-500/10 border border-emerald-500/30 ring-1 ring-emerald-500/20"
                                         : "bg-muted/40 hover:bg-muted/60 border border-transparent"
                                         }`}
-                                    onClick={() => focusField(field.id)}
+                                    onClick={() => focusField(field._id)}
                                 >
                                     <div className="flex items-center gap-2 flex-1 min-w-0">
-                                        <span
-                                            className="inline-block w-3 h-3 rounded-full flex-shrink-0 ring-2 ring-offset-1 ring-offset-background"
-                                            style={{ background: field.color }}
-                                        />
-                                        {editingId === field.id ? (
+                                        <span className="inline-block w-3 h-3 rounded-full flex-shrink-0" style={{ background: field.color }} />
+                                        {editingId === field._id ? (
                                             <input
                                                 autoFocus
                                                 value={editName}
                                                 onChange={(e) => setEditName(e.target.value)}
-                                                onBlur={() => commitRename(field.id)}
+                                                onBlur={() => commitRename(field._id)}
                                                 onKeyDown={(e) => {
-                                                    if (e.key === "Enter") commitRename(field.id);
+                                                    if (e.key === "Enter") commitRename(field._id);
                                                     if (e.key === "Escape") setEditingId(null);
                                                 }}
                                                 onClick={(e) => e.stopPropagation()}
                                                 className="bg-background border border-input rounded px-1.5 py-0.5 text-sm font-medium w-28 focus:outline-none focus:ring-1 focus:ring-primary"
                                             />
                                         ) : (
-                                            <span
-                                                className={`font-medium truncate ${selectedFieldId === field.id
-                                                    ? "text-emerald-700 dark:text-emerald-400"
-                                                    : "hover:text-primary transition-colors"
-                                                    }`}
-                                                title="Click to zoom to this field"
-                                            >
+                                            <span className={`font-medium truncate ${selectedFieldId === field._id ? "text-emerald-700 dark:text-emerald-400" : ""}`}>
                                                 {field.name}
                                             </span>
                                         )}
@@ -447,21 +355,10 @@ export const FieldHealthMap = ({ scans = [] }: FieldHealthMapProps) => {
                                         </Badge>
                                     </div>
                                     <div className="flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
-                                        <Button
-                                            size="icon"
-                                            variant="ghost"
-                                            className="h-6 w-6 text-muted-foreground hover:text-primary"
-                                            onClick={() => startRename(field)}
-                                            title="Rename field"
-                                        >
+                                        <Button size="icon" variant="ghost" className="h-6 w-6 text-muted-foreground hover:text-primary" onClick={() => startRename(field)}>
                                             <Pencil className="h-3 w-3" />
                                         </Button>
-                                        <Button
-                                            size="icon"
-                                            variant="ghost"
-                                            className="h-6 w-6 text-muted-foreground hover:text-destructive"
-                                            onClick={() => removeField(field.id)}
-                                        >
+                                        <Button size="icon" variant="ghost" className="h-6 w-6 text-muted-foreground hover:text-destructive" onClick={() => removeField(field._id)}>
                                             <Trash2 className="h-3 w-3" />
                                         </Button>
                                     </div>
@@ -469,7 +366,6 @@ export const FieldHealthMap = ({ scans = [] }: FieldHealthMapProps) => {
                             ))}
                         </div>
                     )}
-
                     <p className="text-xs text-muted-foreground">
                         💡 Zoom to your area first, then use "Add Field Boundary" to draw.
                     </p>
@@ -482,27 +378,18 @@ export const FieldHealthMap = ({ scans = [] }: FieldHealthMapProps) => {
                     <CardHeader className="pb-3">
                         <div className="flex items-center justify-between">
                             <CardTitle className="text-lg flex items-center gap-2">
-                                <span
-                                    className="inline-block w-3 h-3 rounded-full"
-                                    style={{ background: selectedField.color }}
-                                />
+                                <span className="inline-block w-3 h-3 rounded-full" style={{ background: selectedField.color }} />
                                 {selectedField.name} — Scan Details
                             </CardTitle>
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                                onClick={() => setSelectedFieldId(null)}
-                            >
+                            <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground" onClick={() => setSelectedFieldId(null)}>
                                 <X className="h-4 w-4" />
                             </Button>
                         </div>
                         <CardDescription>
-                            {calcAcres(selectedField.latlngs)} acres • Last scan activity for this farm
+                            {calcAcres(selectedField.latlngs)} acres • {totalScans} scan{totalScans !== 1 ? "s" : ""} attached to this field
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        {/* Quick Stats Row */}
                         {totalScans > 0 ? (
                             <>
                                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -528,54 +415,32 @@ export const FieldHealthMap = ({ scans = [] }: FieldHealthMapProps) => {
                                     </div>
                                 </div>
 
-                                {/* Recent Scans List */}
                                 <div className="space-y-2">
-                                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                                        Recent Scans
-                                    </p>
+                                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Recent Scans</p>
                                     {recentScans.map((scan) => {
-                                        const isHealthy = scan.disease.toLowerCase() === "healthy";
+                                        const isHealthy = scan.disease.toLowerCase().includes("healthy");
                                         return (
-                                            <div
-                                                key={scan._id}
-                                                className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 border border-border/50"
-                                            >
-                                                {/* Scan Image Thumbnail */}
+                                            <div key={scan._id} className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 border border-border/50">
                                                 {scan.imageUrl ? (
                                                     <div className="h-12 w-12 rounded-lg overflow-hidden bg-muted shrink-0">
-                                                        <img
-                                                            src={scan.imageUrl}
-                                                            alt={scan.disease}
-                                                            className="h-full w-full object-cover"
-                                                        />
+                                                        <img src={scan.imageUrl} alt={scan.disease} className="h-full w-full object-cover" />
                                                     </div>
                                                 ) : (
                                                     <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center shrink-0">
                                                         <Activity className="h-5 w-5 text-muted-foreground" />
                                                     </div>
                                                 )}
-
-                                                {/* Scan Info */}
                                                 <div className="flex-1 min-w-0">
                                                     <div className="flex items-center gap-2">
-                                                        <span className="font-semibold text-sm truncate">
-                                                            {scan.disease}
-                                                        </span>
-                                                        <Badge
-                                                            variant={isHealthy ? "default" : "destructive"}
-                                                            className={`text-[10px] shrink-0 ${isHealthy
-                                                                ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30"
-                                                                : ""
-                                                                }`}
-                                                        >
+                                                        <span className="font-semibold text-sm truncate">{scan.disease}</span>
+                                                        <Badge variant={isHealthy ? "default" : "destructive"} className={`text-[10px] shrink-0 ${isHealthy ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30" : ""}`}>
                                                             {isHealthy ? "Healthy" : "Detected"}
                                                         </Badge>
                                                     </div>
                                                     <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
                                                         <Clock className="h-3 w-3" />
                                                         {formatDate(scan.createdAt)} at {formatTime(scan.createdAt)}
-                                                        <span className="text-foreground/60">•</span>
-                                                        <span>{scan.confidence}% confidence</span>
+                                                        <span>• {scan.confidence}% conf</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -586,10 +451,8 @@ export const FieldHealthMap = ({ scans = [] }: FieldHealthMapProps) => {
                         ) : (
                             <div className="text-center py-8 text-muted-foreground">
                                 <Activity className="h-10 w-10 mx-auto mb-2 opacity-40" />
-                                <p className="text-sm font-medium">No scan data available</p>
-                                <p className="text-xs mt-1">
-                                    Perform scans on your crops to see health details here
-                                </p>
+                                <p className="text-sm font-medium">No scans attached to this field</p>
+                                <p className="text-xs mt-1">Scan a leaf and attach it to this field to see health data here.</p>
                             </div>
                         )}
                     </CardContent>
