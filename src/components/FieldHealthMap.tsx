@@ -267,7 +267,7 @@ export const FieldHealthMap = ({ scans = [] }: FieldHealthMapProps) => {
         .slice(0, 5);
 
     const totalScans = fieldScans.length;
-    const healthyScans = fieldScans.filter((s) => s.disease.toLowerCase().includes("healthy")).length;
+    const healthyScans = fieldScans.filter((s) => (s.disease ?? "").toLowerCase().includes("healthy")).length;
     const diseasedScans = totalScans - healthyScans;
     const avgConfidence = totalScans > 0
         ? Math.round(fieldScans.reduce((sum, s) => sum + s.confidence, 0) / totalScans)
@@ -418,7 +418,7 @@ export const FieldHealthMap = ({ scans = [] }: FieldHealthMapProps) => {
                                 <div className="space-y-2">
                                     <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Recent Scans</p>
                                     {recentScans.map((scan) => {
-                                        const isHealthy = scan.disease.toLowerCase().includes("healthy");
+                                        const isHealthy = (scan.disease ?? "").toLowerCase().includes("healthy");
                                         return (
                                             <div key={scan._id} className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 border border-border/50">
                                                 {scan.imageUrl ? (

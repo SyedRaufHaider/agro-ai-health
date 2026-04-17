@@ -11,8 +11,9 @@ interface ScanRecord {
     _id: string;
     imageUrl?: string;
     disease: string;
-    confidence: number;
+    confidence: number;   // 0-100
     createdAt: string;
+    fieldId?: string | null;
 }
 
 const FieldHealthMapPage = () => {
@@ -22,13 +23,28 @@ const FieldHealthMapPage = () => {
         const fetchHistory = async () => {
             try {
                 const res = await api.getScanHistory();
-                setScans(res.data || []);
+                // Normalise backend objects → component-expected shape
+                const mapped: ScanRecord[] = (res.data || []).map((d: any) => ({
+                    _id:      d._id || d.id,
+                    imageUrl: d.imageUrl,
+                    // backend uses predictedLabel; predictedDisease may be populated
+                    disease:
+                        d.predictedLabel ||
+                        d.predictedDisease?.name ||
+                        "Unknown",
+                    // backend stores 0-1, component displays as %
+                    confidence: Math.round((d.confidence ?? 0) * 100),
+                    createdAt: d.createdAt,
+                    fieldId:   d.fieldId ?? null,
+                }));
+                setScans(mapped);
             } catch {
                 setScans([]);
             }
         };
         fetchHistory();
     }, []);
+
 
     return (
         <div className="min-h-screen flex flex-col">
