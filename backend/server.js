@@ -21,14 +21,34 @@ app.use(express.urlencoded({ extended: true }));
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use(
     cors({
-        origin: [
-            process.env.CLIENT_URL?.replace(/\/+$/, "") || "http://localhost:5173",
-            "https://agro-ai-health.vercel.app",
-            "http://localhost:5173",
-            "http://localhost:3000",
-            "http://localhost:8080",
-            "http://localhost:8081",
-        ],
+        origin: function (origin, callback) {
+            // Allow requests with no origin (Android/iOS apps, curl, Postman)
+            if (!origin) return callback(null, true);
+
+            const allowed = [
+                // Production web app
+                "https://agro-ai-health.vercel.app",
+                // Local web dev
+                "http://localhost:5173",
+                "http://localhost:3000",
+                // Flutter web uses a random high port — allow ALL localhost origins
+                /^http:\/\/localhost(:\d+)?$/,
+                /^http:\/\/127\.0\.0\.1(:\d+)?$/,
+                // Optional: CLIENT_URL from .env
+                process.env.CLIENT_URL?.replace(/\/+$/, ""),
+            ].filter(Boolean);
+
+            const isAllowed = allowed.some((p) =>
+                p instanceof RegExp ? p.test(origin) : p === origin
+            );
+
+            if (isAllowed) {
+                callback(null, true);
+            } else {
+                console.warn(`[CORS] blocked: ${origin}`);
+                callback(new Error("CORS: origin not allowed"));
+            }
+        },
         credentials: true,
     })
 );
