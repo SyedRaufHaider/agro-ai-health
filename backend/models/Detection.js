@@ -58,6 +58,12 @@ const DetectionSchema = new mongoose.Schema(
             enum: ["web", "mobile"],
             default: "web",
         },
+        // Optional link to a saved farm field
+        fieldId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Field",
+            default: null,
+        },
     },
     {
         timestamps: true, // createdAt acts as "detectedAt"

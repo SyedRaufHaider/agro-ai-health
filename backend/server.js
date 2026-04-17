@@ -60,6 +60,7 @@ app.use("/api/v1/crops", require("./routes/crops"));
 app.use("/api/v1/diseases", require("./routes/diseases"));
 app.use("/api/v1/detect", require("./routes/detect"));
 app.use("/api/v1/posts", require("./routes/posts"));
+app.use("/api/v1/fields", require("./routes/fields"));
 
 // ─── Health Check ─────────────────────────────────────────────────
 app.get("/", (req, res) => {

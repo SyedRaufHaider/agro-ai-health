@@ -305,4 +305,30 @@ router.get("/:id", protect, async (req, res, next) => {
     }
 });
 
+// @route   PUT /api/v1/detect/:id/field
+// @desc    Attach or detach a detection from a farm field
+// @access  Private
+router.put("/:id/field", protect, async (req, res, next) => {
+    try {
+        const detection = await Detection.findById(req.params.id);
+
+        if (!detection) {
+            return res.status(404).json({ success: false, message: "Detection not found" });
+        }
+
+        if (detection.userId.toString() !== req.user._id.toString()) {
+            return res.status(403).json({ success: false, message: "Not authorized" });
+        }
+
+        // fieldId = null to detach
+        detection.fieldId = req.body.fieldId || null;
+        await detection.save();
+
+        res.json({ success: true, data: detection });
+    } catch (error) {
+        next(error);
+    }
+});
+
 module.exports = router;
+
