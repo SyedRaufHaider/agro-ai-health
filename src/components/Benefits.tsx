@@ -1,4 +1,4 @@
-import { CheckCircle2, TrendingUp, Clock, Shield, History } from "lucide-react";
+import { CheckCircle2, TrendingUp, Clock, Shield } from "lucide-react";
 
 const benefits = [
   {
@@ -20,11 +20,6 @@ const benefits = [
     icon: CheckCircle2,
     title: "Expert Knowledge",
     description: "Access agricultural expertise powered by cutting-edge AI technology.",
-  },
-  {
-    icon: History,
-    title: "NFC Field History",
-    description: "Scan NFC tags to instantly view previous scan records and track field health over time.",
   },
 ];
 

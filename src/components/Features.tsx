@@ -1,9 +1,8 @@
-import { Camera, Brain, Pill, Nfc } from "lucide-react";
+import { Camera, Brain, Pill } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import cameraImg from "@/assets/feature-camera.jpg";
 import aiImg from "@/assets/feature-ai.jpg";
 import medicineImg from "@/assets/feature-medicine.jpg";
-import nfcImg from "@/assets/feature-nfc.jpg";
 
 const features = [
   {
@@ -23,12 +22,6 @@ const features = [
     title: "Treatment Recommendations",
     description: "Get specific medicine suggestions and treatment plans tailored to your plant's condition.",
     image: medicineImg,
-  },
-  {
-    icon: Nfc,
-    title: "NFC Field Identification",
-    description: "Scan NFC tags in your fields to instantly access previous scan history and track plant health over time.",
-    image: nfcImg,
   },
 ];
 
