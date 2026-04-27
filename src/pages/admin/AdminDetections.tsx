@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Navigation } from "@/components/Navigation";
+import { AdminNavigation } from "@/components/AdminNavigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -60,7 +60,7 @@ const AdminDetections = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Navigation />
+      <AdminNavigation />
 
       <main className="flex-1 container mx-auto px-4 py-8 mt-20 space-y-6">
 

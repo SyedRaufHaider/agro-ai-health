@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { Navigation } from "@/components/Navigation";
+import { Link } from "react-router-dom";
+import { AdminNavigation } from "@/components/AdminNavigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/lib/api";
 import {
@@ -13,7 +12,6 @@ import {
   BarChart3,
   ArrowRight,
   ShieldCheck,
-  LogOut,
   CalendarDays,
 } from "lucide-react";
 
@@ -26,7 +24,6 @@ interface AdminStats {
 }
 
 const AdminDashboard = () => {
-  const navigate = useNavigate();
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -40,12 +37,6 @@ const AdminDashboard = () => {
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   }, []);
-
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    navigate("/login");
-  };
 
   const statCards = stats
     ? [
@@ -105,7 +96,7 @@ const AdminDashboard = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Navigation />
+      <AdminNavigation />
 
       <main className="flex-1 container mx-auto px-4 py-8 mt-20 space-y-8">
 
@@ -122,15 +113,9 @@ const AdminDashboard = () => {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Badge variant="outline" className="capitalize px-3 py-1 text-primary border-primary/40">
-              admin
-            </Badge>
-            <Button variant="destructive" size="sm" onClick={handleLogout} className="gap-2">
-              <LogOut className="h-4 w-4" />
-              Logout
-            </Button>
-          </div>
+          <Badge variant="outline" className="self-start md:self-center capitalize px-3 py-1 text-primary border-primary/40">
+            admin
+          </Badge>
         </div>
 
         {/* Error */}
