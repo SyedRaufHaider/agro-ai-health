@@ -1,8 +1,11 @@
-import { Camera, Brain, Pill } from "lucide-react";
+import { Camera, Brain, Pill, History, Map, TrendingUp, Calendar } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import cameraImg from "@/assets/feature-camera.jpg";
 import aiImg from "@/assets/feature-ai.jpg";
 import medicineImg from "@/assets/feature-medicine.jpg";
+import historyImg from "@/assets/hero-agro-ai.jpg";
+import mapImg from "@/assets/feature-nfc.jpg";
+import trendsImg from "@/assets/mobile-scanning.jpg";
 
 const features = [
   {
@@ -23,6 +26,24 @@ const features = [
     description: "Get specific medicine suggestions and treatment plans tailored to your plant's condition.",
     image: medicineImg,
   },
+  {
+    icon: History,
+    title: "Diagnosis History",
+    description: "Access a full log of all your past scans, confidence scores, and treatment records in one place.",
+    image: historyImg,
+  },
+  {
+    icon: Map,
+    title: "Field Health Map",
+    description: "Draw and manage your farm field boundaries on an interactive map to monitor field-level health.",
+    image: mapImg,
+  },
+  {
+    icon: TrendingUp,
+    title: "Disease Trends",
+    description: "Track disease patterns over time and get regional outbreak alerts to stay ahead of crop threats.",
+    image: trendsImg,
+  },
 ];
 
 export const Features = () => {
@@ -31,25 +52,25 @@ export const Features = () => {
       <div className="container px-4">
         <div className="text-center max-w-3xl mx-auto mb-16">
           <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
-            How Agro AI Works
+            Everything You Need
           </h2>
           <p className="text-lg text-muted-foreground">
-            Three simple steps to protect your plants and maximize your harvest
+            A complete toolkit to detect, track, and manage plant health across your farm
           </p>
         </div>
-        
+
         <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
           {features.map((feature, index) => {
             const Icon = feature.icon;
             return (
-              <Card 
-                key={index} 
+              <Card
+                key={index}
                 className="group hover:shadow-xl transition-all duration-300 border-border/50 hover:border-primary/30 overflow-hidden"
               >
                 <CardContent className="p-0">
                   <div className="relative h-48 overflow-hidden">
-                    <img 
-                      src={feature.image} 
+                    <img
+                      src={feature.image}
                       alt={feature.title}
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                     />
@@ -58,11 +79,8 @@ export const Features = () => {
                       <Icon className="w-6 h-6 text-primary-foreground" />
                     </div>
                   </div>
-                  
+
                   <div className="p-6 space-y-3">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-bold text-primary">Step {index + 1}</span>
-                    </div>
                     <h3 className="text-xl font-semibold text-card-foreground">
                       {feature.title}
                     </h3>

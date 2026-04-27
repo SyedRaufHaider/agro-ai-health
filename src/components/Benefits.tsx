@@ -1,4 +1,4 @@
-import { CheckCircle2, TrendingUp, Clock, Shield } from "lucide-react";
+import { CheckCircle2, TrendingUp, Clock, Shield, History, Map, Calendar } from "lucide-react";
 
 const benefits = [
   {
@@ -21,6 +21,21 @@ const benefits = [
     title: "Expert Knowledge",
     description: "Access agricultural expertise powered by cutting-edge AI technology.",
   },
+  {
+    icon: History,
+    title: "Full Scan History",
+    description: "Every diagnosis is saved so you can track plant health trends over time.",
+  },
+  {
+    icon: Map,
+    title: "Field Health Map",
+    description: "Visualize and manage your farm field boundaries with an interactive map.",
+  },
+  {
+    icon: Calendar,
+    title: "Crop Calendar",
+    description: "Stay on schedule with Pakistan's crop sowing and harvest calendar.",
+  },
 ];
 
 export const Benefits = () => {
@@ -35,12 +50,12 @@ export const Benefits = () => {
             Trusted by farmers and gardeners worldwide to protect their plants
           </p>
         </div>
-        
+
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto">
           {benefits.map((benefit, index) => {
             const Icon = benefit.icon;
             return (
-              <div 
+              <div
                 key={index}
                 className="text-center space-y-4 p-6 rounded-xl hover:bg-muted/50 transition-colors"
               >
