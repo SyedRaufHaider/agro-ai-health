@@ -4,7 +4,7 @@ import cameraImg from "@/assets/feature-camera.jpg";
 import aiImg from "@/assets/feature-ai.jpg";
 import medicineImg from "@/assets/feature-medicine.jpg";
 import historyImg from "@/assets/hero-agro-ai.jpg";
-import mapImg from "@/assets/feature-nfc.jpg";
+import mapImg from "@/assets/feature-field-map.png";
 import trendsImg from "@/assets/mobile-scanning.jpg";
 
 const features = [
