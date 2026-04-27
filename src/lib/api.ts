@@ -116,6 +116,18 @@ export const api = {
       }
     );
   },
+
+  // ── Admin API ──────────────────────────────────────────────────────────────
+  getAdminStats: () =>
+    apiCall<{ success: boolean; data: any }>('/admin/stats'),
+
+  getAdminUsers: () =>
+    apiCall<{ success: boolean; count: number; data: any[] }>('/admin/users'),
+
+  getAdminDetections: (page = 1, limit = 20) =>
+    apiCall<{ success: boolean; total: number; pages: number; data: any[] }>(
+      `/admin/detections?page=${page}&limit=${limit}`
+    ),
 };
 
 export default api;

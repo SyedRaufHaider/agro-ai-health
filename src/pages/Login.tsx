@@ -30,7 +30,11 @@ const Login = () => {
         description: "Welcome back to Agro AI!",
       });
 
-      navigate("/dashboard");
+      if (response.user?.role === "admin") {
+        navigate("/admin");
+      } else {
+        navigate("/dashboard");
+      }
     } catch (error: any) {
       toast({
         title: "Login failed",

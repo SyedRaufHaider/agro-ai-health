@@ -26,7 +26,12 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import FAQs from "./pages/FAQs";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
+import AdminRoute from "./components/AdminRoute";
 import OAuthCallback from "./pages/OAuthCallback";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminUsers from "./pages/admin/AdminUsers";
+import AdminDetections from "./pages/admin/AdminDetections";
+import AdminActivity from "./pages/admin/AdminActivity";
 
 const queryClient = new QueryClient();
 
@@ -59,6 +64,11 @@ const App = () => (
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />
             <Route path="/faqs" element={<FAQs />} />
             <Route path="/oauth-callback" element={<OAuthCallback />} />
+            {/* ── Admin Routes ───────────────────────────────────────────────── */}
+            <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+            <Route path="/admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
+            <Route path="/admin/detections" element={<AdminRoute><AdminDetections /></AdminRoute>} />
+            <Route path="/admin/activity" element={<AdminRoute><AdminActivity /></AdminRoute>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
